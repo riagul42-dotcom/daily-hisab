@@ -1,0 +1,16 @@
+node_modules/
+client/node_modules/
+client/dist/
+data/
+.env
+*.log
+.tools/
+
+# Android
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.iml

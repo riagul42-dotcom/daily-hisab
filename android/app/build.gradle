@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application'
+}
+
+def serverUrl = project.findProperty('DAILYHISAB_SERVER_URL') ?: 'https://committed-kissing-planner-bookmark.trycloudflare.com'
+
+android {
+    namespace 'com.glowora.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.dailyhisab.app'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+        buildConfigField 'String', 'SERVER_URL', "\"${serverUrl}\""
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+            manifestPlaceholders = [usesCleartextTraffic: 'true']
+        }
+        release {
+            minifyEnabled false
+            manifestPlaceholders = [usesCleartextTraffic: 'false']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}

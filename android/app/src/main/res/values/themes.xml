@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.Light">
+        <item name="android:colorAccent">@color/rose</item>
+        <item name="android:windowBackground">@color/cream</item>
+        <item name="android:statusBarColor">@color/plum</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:actionBarStyle">@style/HisabActionBar</item>
+    </style>
+
+    <style name="HisabActionBar" parent="android:Widget.Material.Light.ActionBar">
+        <item name="android:background">@color/plum</item>
+        <item name="android:titleTextColor">@color/white</item>
+    </style>
+</resources>

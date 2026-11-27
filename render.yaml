@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: daily-hisab
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev && npm --prefix client install --include=dev && npm --prefix client run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: ADMIN_EMAIL
+        value: admin@dailyhisab.com
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: daily-hisab-db
+          property: connectionString
+
+databases:
+  # সতর্কতা: Render free Postgres ৩০ দিন পর মেয়াদোত্তীর্ণ হয়।
+  # স্থায়ী ডেটার জন্য Render paid DB বা Neon free ব্যবহার করুন (DATABASE_URL বদলে দিলেই হবে)।
+  - name: daily-hisab-db
+    plan: free
+    databaseName: daily_hisab
+    user: dailyhisab

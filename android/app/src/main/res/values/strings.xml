@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Daily Hisab</string>
+    <string name="server_settings">সার্ভার ঠিকানা</string>
+    <string name="server_hint">https://committed-kissing-planner-bookmark.trycloudflare.com</string>
+    <string name="connect">সংযোগ করুন</string>
+    <string name="cancel">বাতিল</string>
+    <string name="retry">আবার চেষ্টা করুন</string>
+    <string name="reload">রিফ্রেশ</string>
+    <string name="connection_error">Daily Hisab-এ সংযোগ করা যায়নি</string>
+    <string name="connection_help">একই Wi-Fi-তে কম্পিউটারের LAN IP ঠিকানা দিন। অন্য নেটওয়ার্ক বা মোবাইল ডেটা থেকে ব্যবহার করতে Daily Hisab-এর HTTPS ঠিকানা দিন।</string>
+    <string name="invalid_url">সঠিক http:// বা https:// ঠিকানা লিখুন।</string>
+    <string name="current_server">বর্তমান সার্ভার\n%1$s</string>
+    <string name="brand_initial">৳</string>
+    <string name="ssl_error">নিরাপদ SSL সংযোগ স্থাপন করা যায়নি।</string>
+    <string name="external_error">এই লিংকটি খোলার উপযুক্ত অ্যাপ পাওয়া যায়নি।</string>
+    <string name="download_started">ডাউনলোড শুরু হয়েছে। Downloads ফোল্ডার দেখুন।</string>
+    <string name="download_permission_required">ডাউনলোড করতে স্টোরেজ পারমিশন দিন।</string>
+</resources>
