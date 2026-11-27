@@ -25,7 +25,20 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
   const reportRef = useRef(null);
+
+  useEffect(() => {
+    const bump = () => {
+      if (document.visibilityState === 'visible') setRefreshTick((t) => t + 1);
+    };
+    document.addEventListener('visibilitychange', bump);
+    window.addEventListener('focus', bump);
+    return () => {
+      document.removeEventListener('visibilitychange', bump);
+      window.removeEventListener('focus', bump);
+    };
+  }, []);
 
   const years = useMemo(() => {
     const y = now.getFullYear();
@@ -59,7 +72,7 @@ export default function Reports() {
     return () => {
       alive = false;
     };
-  }, [range.from, range.to, scope]);
+  }, [range.from, range.to, scope, refreshTick]);
 
   const label = mode === 'month'
     ? `${BN_MONTHS[month - 1]} ${bnDigits(year)}`

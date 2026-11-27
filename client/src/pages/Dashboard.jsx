@@ -36,6 +36,19 @@ export default function Dashboard() {
   const [year, setYear] = useState({ total: 0, count: 0, incomeTotal: 0 });
   const [monthly, setMonthly] = useState([]);
   const [recent, setRecent] = useState([]);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  useEffect(() => {
+    const bump = () => {
+      if (document.visibilityState === 'visible') setRefreshTick((t) => t + 1);
+    };
+    document.addEventListener('visibilitychange', bump);
+    window.addEventListener('focus', bump);
+    return () => {
+      document.removeEventListener('visibilitychange', bump);
+      window.removeEventListener('focus', bump);
+    };
+  }, []);
 
   const scopeQuery = useMemo(
     () => (scope === 'all' ? '' : `scope=${scope}&`),
@@ -83,7 +96,7 @@ export default function Dashboard() {
     return () => {
       alive = false;
     };
-  }, [scopeQuery, monthPick]);
+  }, [scopeQuery, monthPick, refreshTick]);
 
   const pieData = (month.byCategory || []).map((c) => ({ name: c.category, value: Math.round(c.total) }));
 

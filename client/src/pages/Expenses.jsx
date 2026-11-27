@@ -386,7 +386,20 @@ export default function Expenses() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modal, setModal] = useState(null);
+  const [refreshTick, setRefreshTick] = useState(0);
   const limit = 15;
+
+  useEffect(() => {
+    const bump = () => {
+      if (document.visibilityState === 'visible') setRefreshTick((t) => t + 1);
+    };
+    document.addEventListener('visibilitychange', bump);
+    window.addEventListener('focus', bump);
+    return () => {
+      document.removeEventListener('visibilitychange', bump);
+      window.removeEventListener('focus', bump);
+    };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -407,7 +420,7 @@ export default function Expenses() {
     } finally {
       setLoading(false);
     }
-  }, [filters.from, filters.to, filters.scope, query, page]);
+  }, [filters.from, filters.to, filters.scope, query, page, refreshTick]);
 
   useEffect(() => {
     load();
