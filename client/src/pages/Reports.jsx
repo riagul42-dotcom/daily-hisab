@@ -139,18 +139,14 @@ export default function Reports() {
       [mode === 'month' ? 'তারিখ' : 'মাস', 'রেকর্ড', 'মোট (৳)'],
       ...rowsForPeriod.map((r) => [r.label, r.count, Math.round(r.total * 100) / 100]),
     ];
-    if (user?.role === 'superadmin' || user?.role === 'manager') {
-      aoa.push([], ['ব্যবহারকারী', 'রেকর্ড', 'মোট (৳)']);
-      summary.byUser.forEach((u) => aoa.push([u.user_name, u.count, Math.round(u.total * 100) / 100]));
-    }
+    aoa.push([], ['ব্যবহারকারী', 'রেকর্ড', 'মোট (৳)']);
+    summary.byUser.forEach((u) => aoa.push([u.user_name, u.count, Math.round(u.total * 100) / 100]));
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols'] = [{ wch: 24 }, { wch: 12 }, { wch: 14 }, { wch: 14 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'রিপোর্ট');
     XLSX.writeFile(wb, `Daily-Hisab-${fileTag}.xlsx`);
   };
-
-  const canSeeUsers = user?.role === 'superadmin' || user?.role === 'manager';
 
   return (
     <div className="page">
@@ -197,16 +193,14 @@ export default function Reports() {
             </>
           )}
 
-          {user?.role !== 'family' && (
-            <label className="field compact">
-              <span>ধরন</span>
-              <select value={scope} onChange={(e) => setScope(e.target.value)}>
-                <option value="">সব</option>
-                <option value="family">পারিবারিক</option>
-                <option value="business">ব্যবসায়িক</option>
-              </select>
-            </label>
-          )}
+          <label className="field compact">
+            <span>ধরন</span>
+            <select value={scope} onChange={(e) => setScope(e.target.value)}>
+              <option value="">সব</option>
+              <option value="family">পারিবারিক</option>
+              <option value="business">ব্যবসায়িক</option>
+            </select>
+          </label>
 
           <div className="export-actions">
             <button className="btn ghost" onClick={downloadPDF} disabled={!summary || exporting}>
@@ -330,7 +324,7 @@ export default function Reports() {
             </div>
           )}
 
-          {canSeeUsers && summary.byUser.length > 0 && (
+          {summary.byUser.length > 0 && (
             <div className="report-section">
               <h4>ব্যবহারকারী অনুযায়ী খরচ</h4>
               <div className="table-wrap">

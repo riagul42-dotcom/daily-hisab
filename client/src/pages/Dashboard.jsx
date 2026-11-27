@@ -74,7 +74,6 @@ export default function Dashboard() {
   }, [scopeQuery]);
 
   const pieData = (month.byCategory || []).map((c) => ({ name: c.category, value: Math.round(c.total) }));
-  const isFamily = user?.role === 'family';
 
   return (
     <div className="page">
@@ -85,19 +84,17 @@ export default function Dashboard() {
           <h2 className="welcome">স্বাগতম, {user?.name}</h2>
           <p className="muted">আপনার খরচের সারসংক্ষেপ এক নজরে</p>
         </div>
-        {!isFamily && (
-          <div className="seg">
-            {[['all', 'সব'], ['family', 'পারিবারিক'], ['business', 'ব্যবসায়িক']].map(([v, label]) => (
-              <button
-                key={v}
-                className={`seg-btn ${scope === v ? 'active' : ''}`}
-                onClick={() => setScope(v)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="seg">
+          {[['all', 'সব'], ['family', 'পারিবারিক'], ['business', 'ব্যবসায়িক']].map(([v, label]) => (
+            <button
+              key={v}
+              className={`seg-btn ${scope === v ? 'active' : ''}`}
+              onClick={() => setScope(v)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="stat-grid">

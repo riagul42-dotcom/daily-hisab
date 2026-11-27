@@ -35,6 +35,18 @@ function parseIncome(body) {
   return { value: { scope, category, source, amount: rounded, incomeDate, note } };
 }
 
+async function resolveOwner(req) {
+  if (canViewAll(req.user) && req.body.user_id) {
+    const uid = Number(req.body.user_id);
+    const { rowCount } = await pool.query(
+      `SELECT 1 FROM users WHERE id = $1 AND status = 'active'`,
+      [uid]
+    );
+    return rowCount ? uid : null;
+  }
+  return req.user.id;
+}
+
 router.get('/', authenticate, async (req, res, next) => {
   try {
     const { from, to, scope, q, page = '1', limit = '20', user_id } = req.query;
@@ -42,13 +54,7 @@ router.get('/', authenticate, async (req, res, next) => {
     const values = [];
     let i = 1;
 
-    if (!canViewAll(req.user)) {
-      where.push(`i.user_id = $${i++}`);
-      values.push(req.user.id);
-      if (req.user.role === 'family') {
-        where.push(`i.scope = 'family'`);
-      }
-    } else if (user_id) {
+    if (user_id) {
       where.push(`i.user_id = $${i++}`);
       values.push(Number(user_id));
     }
@@ -117,13 +123,15 @@ router.post('/', authenticate, async (req, res, next) => {
     if (parsed.error) return res.status(400).json({ error: parsed.error });
     let v = parsed.value;
     if (req.user.role === 'family') v = { ...v, scope: 'family' };
+    const ownerId = await resolveOwner(req);
+    if (!ownerId) return res.status(400).json({ error: 'ব্যবহারকারী পাওয়া যায়নি' });
 
     const { rows } = await pool.query(
       `INSERT INTO incomes (user_id, scope, category, source, amount, income_date, note)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, user_id, scope, category, source, amount::float,
                  to_char(income_date, 'YYYY-MM-DD') AS income_date, note`,
-      [req.user.id, v.scope, v.category, v.source, v.amount, v.incomeDate, v.note]
+      [ownerId, v.scope, v.category, v.source, v.amount, v.incomeDate, v.note]
     );
     res.status(201).json({ income: rows[0] });
   } catch (err) {
@@ -161,14 +169,25 @@ router.put('/:id', authenticate, async (req, res, next) => {
     let v = parsed.value;
     if (req.user.role === 'family') v = { ...v, scope: 'family' };
 
+    let ownerId = existing.user_id;
+    if (canViewAll(req.user) && req.body.user_id) {
+      const uid = Number(req.body.user_id);
+      const { rowCount } = await pool.query(
+        `SELECT 1 FROM users WHERE id = $1 AND status = 'active'`,
+        [uid]
+      );
+      if (!rowCount) return res.status(400).json({ error: 'ব্যবহারকারী পাওয়া যায়নি' });
+      ownerId = uid;
+    }
+
     const { rows } = await pool.query(
       `UPDATE incomes SET
-         scope = $1, category = $2, source = $3, amount = $4,
-         income_date = $5, note = $6, updated_at = now()
-       WHERE id = $7
+         user_id = $1, scope = $2, category = $3, source = $4, amount = $5,
+         income_date = $6, note = $7, updated_at = now()
+       WHERE id = $8
        RETURNING id, user_id, scope, category, source, amount::float,
                  to_char(income_date, 'YYYY-MM-DD') AS income_date, note`,
-      [v.scope, v.category, v.source, v.amount, v.incomeDate, v.note, existing.id]
+      [ownerId, v.scope, v.category, v.source, v.amount, v.incomeDate, v.note, existing.id]
     );
     res.json({ income: rows[0] });
   } catch (err) {

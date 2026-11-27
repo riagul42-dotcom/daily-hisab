@@ -1,6 +1,6 @@
 const express = require('express');
 const { pool } = require('../db');
-const { authenticate, canViewAll } = require('../auth');
+const { authenticate } = require('../auth');
 
 const router = express.Router();
 
@@ -12,11 +12,7 @@ function buildFilters(req, { dates = true } = {}) {
   const values = [];
   let i = 1;
 
-  if (!canViewAll(req.user)) {
-    where.push(`e.user_id = $${i++}`);
-    values.push(req.user.id);
-    if (req.user.role === 'family') where.push(`e.scope = 'family'`);
-  } else if (user_id) {
+  if (user_id) {
     where.push(`e.user_id = $${i++}`);
     values.push(Number(user_id));
   }
@@ -41,11 +37,7 @@ function buildIncomeFilters(req, { dates = true } = {}) {
   const values = [];
   let i = 1;
 
-  if (!canViewAll(req.user)) {
-    where.push(`i.user_id = $${i++}`);
-    values.push(req.user.id);
-    if (req.user.role === 'family') where.push(`i.scope = 'family'`);
-  } else if (user_id) {
+  if (user_id) {
     where.push(`i.user_id = $${i++}`);
     values.push(Number(user_id));
   }
@@ -137,15 +129,12 @@ router.get('/summary', authenticate, async (req, res, next) => {
       incomeAll.values
     );
 
-    let byUserPromise = Promise.resolve({ rows: [] });
-    if (canViewAll(req.user)) {
-      byUserPromise = pool.query(
-        `SELECT e.user_id, u.name AS user_name, sum(e.total)::float AS total, count(*)::int AS count
-         FROM expenses e JOIN users u ON u.id = e.user_id ${whereSql}
-         GROUP BY e.user_id, u.name ORDER BY total DESC LIMIT 50`,
-        values
-      );
-    }
+    const byUserPromise = pool.query(
+      `SELECT e.user_id, u.name AS user_name, sum(e.total)::float AS total, count(*)::int AS count
+       FROM expenses e JOIN users u ON u.id = e.user_id ${whereSql}
+       GROUP BY e.user_id, u.name ORDER BY total DESC LIMIT 50`,
+      values
+    );
 
     const [totals, byCategory, byScope, byMonth, byDay, byUser, incomeTotals, incomeByCategory, expenseAllTotals, incomeAllTotals] = await Promise.all([
       totalsPromise, byCategoryPromise, byScopePromise, byMonthPromise, byDayPromise, byUserPromise,
@@ -183,11 +172,6 @@ router.get('/monthly', authenticate, async (req, res, next) => {
     const values = [];
     let i = 1;
 
-    if (!canViewAll(req.user)) {
-      where.push(`e.user_id = $${i++}`);
-      values.push(req.user.id);
-      if (req.user.role === 'family') where.push(`e.scope = 'family'`);
-    }
     if (scope === 'family' || scope === 'business') {
       where.push(`e.scope = $${i++}`);
       values.push(scope);

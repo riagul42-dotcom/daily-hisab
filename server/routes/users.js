@@ -19,6 +19,18 @@ function requireUserCreator(req, res, next) {
 
 router.use(authenticate);
 
+// নাম বাছাইয়ের তালিকা — সব লগইন করা ব্যবহারকারী দেখতে পারবে
+router.get('/options', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, name FROM users WHERE status = 'active' ORDER BY name ASC`
+    );
+    res.json({ users: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/', requireRole('superadmin'), async (req, res, next) => {
   try {
     const { rows } = await pool.query(

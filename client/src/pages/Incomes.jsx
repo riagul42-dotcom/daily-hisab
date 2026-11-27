@@ -19,6 +19,16 @@ function IncomeForm({ initial, onSaved, onCancel }) {
   }));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const canAssign = user?.role === 'superadmin' || user?.role === 'manager';
+  const [people, setPeople] = useState([]);
+  const [ownerId, setOwnerId] = useState(initial?.user_id ? String(initial.user_id) : '');
+
+  useEffect(() => {
+    if (!canAssign) return;
+    api('/users/options')
+      .then((d) => setPeople(d.users || []))
+      .catch(() => {});
+  }, [canAssign]);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -27,7 +37,11 @@ function IncomeForm({ initial, onSaved, onCancel }) {
     setError('');
     setBusy(true);
     try {
-      const payload = { ...form, amount: Number(form.amount) };
+      const payload = {
+        ...form,
+        amount: Number(form.amount),
+        ...(canAssign && ownerId ? { user_id: Number(ownerId) } : {}),
+      };
       if (isEdit) {
         await api(`/incomes/${initial.id}`, { method: 'PUT', body: JSON.stringify(payload) });
       } else {
@@ -54,6 +68,18 @@ function IncomeForm({ initial, onSaved, onCancel }) {
           required
         />
       </label>
+
+      {canAssign && (
+        <label className="field">
+          <span>কার নামে</span>
+          <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
+            <option value="">আমি (নিজের নামে)</option>
+            {people.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className="field">
         <span>ক্যাটাগরি</span>
@@ -217,7 +243,7 @@ export default function Incomes() {
                   <th>উৎস</th>
                   <th>ক্যাটাগরি</th>
                   <th className="right">টাকা</th>
-                  {canManageAll && <th>ব্যবহারকারী</th>}
+                  <th>ব্যবহারকারী</th>
                   <th className="right">অ্যাকশন</th>
                 </tr>
               </thead>
@@ -232,16 +258,18 @@ export default function Incomes() {
                     </td>
                     <td className="muted">{item.category}</td>
                     <td className="right strong nowrap">{fmtTK(item.amount)}</td>
-                    {canManageAll && <td className="muted nowrap">{item.user_name}</td>}
+                    <td className="muted nowrap">{item.user_name}</td>
                     <td className="right">
-                      <div className="row-actions">
-                        <button className="icon-btn" onClick={() => setModal(item)} title="সম্পাদনা">
-                          <Icon name="edit" size={17} />
-                        </button>
-                        <button className="icon-btn danger" onClick={() => remove(item)} title="মুছুন">
-                          <Icon name="trash" size={17} />
-                        </button>
-                      </div>
+                      {(canManageAll || item.user_id === user?.id) && (
+                        <div className="row-actions">
+                          <button className="icon-btn" onClick={() => setModal(item)} title="সম্পাদনা">
+                            <Icon name="edit" size={17} />
+                          </button>
+                          <button className="icon-btn danger" onClick={() => remove(item)} title="মুছুন">
+                            <Icon name="trash" size={17} />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

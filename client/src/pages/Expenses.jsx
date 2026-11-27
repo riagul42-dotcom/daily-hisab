@@ -108,12 +108,22 @@ function ExpenseForm({ initial, onSaved, onCancel }) {
   const [itemNames, setItemNames] = useState([]);
   const [bulk, setBulk] = useState(false);
   const [rows, setRows] = useState(() => [emptyRow()]);
+  const canAssign = !isEdit && (user?.role === 'superadmin' || user?.role === 'manager');
+  const [people, setPeople] = useState([]);
+  const [ownerId, setOwnerId] = useState('');
 
   useEffect(() => {
     api('/expenses/items')
       .then((d) => setItemNames(d.items || []))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!canAssign) return;
+    api('/users/options')
+      .then((d) => setPeople(d.users || []))
+      .catch(() => {});
+  }, [canAssign]);
 
   const allowBulk = !isEdit;
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -150,6 +160,7 @@ function ExpenseForm({ initial, onSaved, onCancel }) {
     }
     setBusy(true);
     try {
+      const assignee = canAssign && ownerId ? { user_id: Number(ownerId) } : {};
       if (bulk) {
         const items = rows.map((row) => ({
           item_name: String(row.item_name).trim(),
@@ -161,10 +172,11 @@ function ExpenseForm({ initial, onSaved, onCancel }) {
           scope: form.scope,
           note: form.note,
         }));
-        await api('/expenses/bulk', { method: 'POST', body: JSON.stringify({ items }) });
+        await api('/expenses/bulk', { method: 'POST', body: JSON.stringify({ items, ...assignee }) });
       } else {
         const payload = {
           ...form,
+          ...assignee,
           quantity: Number(form.quantity),
           unit_price: Number(form.unit_price),
         };
@@ -195,6 +207,18 @@ function ExpenseForm({ initial, onSaved, onCancel }) {
             একসাথে অনেক হিসাব
           </button>
         </div>
+      )}
+
+      {canAssign && (
+        <label className="field">
+          <span>কে হিসাব দিচ্ছেন</span>
+          <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
+            <option value="">আমি (নিজের নামে)</option>
+            {people.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </label>
       )}
 
       {bulk ? (
@@ -475,7 +499,7 @@ export default function Expenses() {
                   <th className="right">পরিমাণ</th>
                   <th className="right">একক মূল্য</th>
                   <th className="right">মোট</th>
-                  {canManageAll && <th>ব্যবহারকারী</th>}
+                  <th>ব্যবহারকারী</th>
                   <th className="right">অ্যাকশন</th>
                 </tr>
               </thead>
@@ -492,16 +516,18 @@ export default function Expenses() {
                     <td className="right nowrap">{fmtQty(e.quantity)} {e.unit}</td>
                     <td className="right nowrap">{fmtTK(e.unit_price)}</td>
                     <td className="right strong nowrap">{fmtTK(e.total)}</td>
-                    {canManageAll && <td className="muted nowrap">{e.user_name}</td>}
+                    <td className="muted nowrap">{e.user_name}</td>
                     <td className="right">
-                      <div className="row-actions">
-                        <button className="icon-btn" onClick={() => setModal(e)} title="সম্পাদনা">
-                          <Icon name="edit" size={17} />
-                        </button>
-                        <button className="icon-btn danger" onClick={() => remove(e)} title="মুছুন">
-                          <Icon name="trash" size={17} />
-                        </button>
-                      </div>
+                      {(canManageAll || e.user_id === user?.id) && (
+                        <div className="row-actions">
+                          <button className="icon-btn" onClick={() => setModal(e)} title="সম্পাদনা">
+                            <Icon name="edit" size={17} />
+                          </button>
+                          <button className="icon-btn danger" onClick={() => remove(e)} title="মুছুন">
+                            <Icon name="trash" size={17} />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

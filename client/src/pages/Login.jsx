@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import { Icon } from '../components/Icons.jsx';
 
@@ -74,7 +74,7 @@ export default function Login() {
           </button>
 
           <p className="switch">
-            অ্যাকাউন্ট নেই? <Link to="/register">নিবন্ধন করুন</Link>
+            নতুন আইডি দরকার? অ্যাডমিনের সাথে যোগাযোগ করুন
           </p>
 
           <a className="apk-note" href="/Daily-Hisab.apk" download>

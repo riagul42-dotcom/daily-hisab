@@ -50,6 +50,18 @@ function parseExpense(body) {
   };
 }
 
+async function resolveOwner(req) {
+  if (canViewAll(req.user) && req.body.user_id) {
+    const uid = Number(req.body.user_id);
+    const { rowCount } = await pool.query(
+      `SELECT 1 FROM users WHERE id = $1 AND status = 'active'`,
+      [uid]
+    );
+    return rowCount ? uid : null;
+  }
+  return req.user.id;
+}
+
 // সারাংশ ও তালিকা — ভূমিকা অনুযায়ী দেখা যাবে
 router.get('/', authenticate, async (req, res, next) => {
   try {
@@ -58,13 +70,7 @@ router.get('/', authenticate, async (req, res, next) => {
     const values = [];
     let i = 1;
 
-    if (!canViewAll(req.user)) {
-      where.push(`e.user_id = $${i++}`);
-      values.push(req.user.id);
-      if (req.user.role === 'family') {
-        where.push(`e.scope = 'family'`);
-      }
-    } else if (user_id) {
+    if (user_id) {
       where.push(`e.user_id = $${i++}`);
       values.push(Number(user_id));
     }
@@ -130,22 +136,12 @@ router.get('/', authenticate, async (req, res, next) => {
 // আগে ব্যবহৃত পণ্যের নাম — ফর্মে অটো-সাজেশনের জন্য
 router.get('/items', authenticate, async (req, res, next) => {
   try {
-    const where = [];
-    const values = [];
-    let i = 1;
-    if (!canViewAll(req.user)) {
-      where.push(`e.user_id = $${i++}`);
-      values.push(req.user.id);
-      if (req.user.role === 'family') where.push(`e.scope = 'family'`);
-    }
-    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const { rows } = await pool.query(
       `SELECT e.item_name AS name, count(*)::int AS uses, max(e.id) AS last_id
-       FROM expenses e ${whereSql}
+       FROM expenses e
        GROUP BY e.item_name
        ORDER BY uses DESC, last_id DESC
-       LIMIT 300`,
-      values
+       LIMIT 300`
     );
     res.json({ items: rows.map((r) => r.name) });
   } catch (err) {
@@ -159,6 +155,8 @@ router.post('/', authenticate, async (req, res, next) => {
     if (parsed.error) return res.status(400).json({ error: parsed.error });
     let v = parsed.value;
     if (req.user.role === 'family') v = { ...v, scope: 'family' };
+    const ownerId = await resolveOwner(req);
+    if (!ownerId) return res.status(400).json({ error: 'ব্যবহারকারী পাওয়া যায়নি' });
 
     const { rows } = await pool.query(
       `INSERT INTO expenses
@@ -166,7 +164,7 @@ router.post('/', authenticate, async (req, res, next) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id, user_id, scope, category, item_name, quantity::float, unit, unit_price::float,
                  total::float, to_char(expense_date, 'YYYY-MM-DD') AS expense_date, note`,
-      [req.user.id, v.scope, v.category, v.itemName, v.quantity, v.unit,
+      [ownerId, v.scope, v.category, v.itemName, v.quantity, v.unit,
         v.unitPrice, v.total, v.expenseDate, v.note]
     );
     res.status(201).json({ expense: rows[0] });
@@ -192,6 +190,8 @@ router.post('/bulk', authenticate, async (req, res, next) => {
       }
       values.push(req.user.role === 'family' ? { ...parsed.value, scope: 'family' } : parsed.value);
     }
+    const ownerId = await resolveOwner(req);
+    if (!ownerId) return res.status(400).json({ error: 'ব্যবহারকারী পাওয়া যায়নি' });
 
     const client = await pool.connect();
     try {
@@ -204,7 +204,7 @@ router.post('/bulk', authenticate, async (req, res, next) => {
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
            RETURNING id, scope, category, item_name, quantity::float, unit, unit_price::float,
                      total::float, to_char(expense_date, 'YYYY-MM-DD') AS expense_date, note`,
-          [req.user.id, v.scope, v.category, v.itemName, v.quantity, v.unit,
+          [ownerId, v.scope, v.category, v.itemName, v.quantity, v.unit,
             v.unitPrice, v.total, v.expenseDate, v.note]
         );
         created.push(rows[0]);

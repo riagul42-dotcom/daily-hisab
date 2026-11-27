@@ -19,8 +19,6 @@ const loginLimiter = rateLimit({
   message: { error: 'অনেকবার চেষ্টা হয়েছে, কিছুক্ষণ পরে আবার চেষ্টা করুন' },
 });
 
-const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-
 router.post('/login', loginLimiter, async (req, res, next) => {
   try {
     const email = String(req.body.email || '').trim().toLowerCase();
@@ -55,38 +53,9 @@ router.post('/login', loginLimiter, async (req, res, next) => {
   }
 });
 
-router.post('/register', loginLimiter, async (req, res, next) => {
-  try {
-    const name = String(req.body.name || '').trim();
-    const email = String(req.body.email || '').trim().toLowerCase();
-    const phone = String(req.body.phone || '').trim() || null;
-    const password = String(req.body.password || '');
-
-    if (name.length < 2) return res.status(400).json({ error: 'নাম লিখুন' });
-    if (!isEmail(email)) return res.status(400).json({ error: 'সঠিক ইমেইল দিন' });
-    if (password.length < 8) {
-      return res.status(400).json({ error: 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে' });
-    }
-
-    const exists = await pool.query('SELECT 1 FROM users WHERE lower(email) = $1', [email]);
-    if (exists.rowCount > 0) {
-      return res.status(409).json({ error: 'এই ইমেইলে ইতিমধ্যে অ্যাকাউন্ট আছে' });
-    }
-
-    const hash = await bcrypt.hash(password, 12);
-    const { rows } = await pool.query(
-      `INSERT INTO users (name, email, phone, password_hash, role, account_type)
-       VALUES ($1, $2, $3, $4, 'family', 'family')
-       RETURNING id, name, email, phone, role, account_type`,
-      [name, email, phone, hash]
-    );
-
-    const user = rows[0];
-    setAuthCookie(res, signToken(user));
-    res.status(201).json({ user });
-  } catch (err) {
-    next(err);
-  }
+// নতুন আইডি শুধু অ্যাডমিন/অনুমতিপ্রাপ্ত ব্যবহারকারী খুলতে পারবেন (users রুটে)
+router.post('/register', (req, res) => {
+  res.status(403).json({ error: 'নিজে থেকে নিবন্ধন বন্ধ আছে; অ্যাডমিনের সাথে যোগাযোগ করুন' });
 });
 
 router.post('/logout', (req, res) => {
