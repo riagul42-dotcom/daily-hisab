@@ -89,10 +89,10 @@ gradlew.bat assembleDebug -PDAILYHISAB_SERVER_URL="https://আপনার-ড�
 `app/build.gradle`-এর `DAILYHISAB_SERVER_URL` ডিফল্ট সাইটের ঠিকানা; অ্যাপের ভেতরে
 সেটিংস থেকে যেকোনো সময় সার্ভার ঠিকানা বদলানো যায় (শুধু http/https, একই origin লোড হয়)।
 
-## স্থায়ী ডিপ্লয়মেন্ট (Render)
+## স্থায়ী ডিপ্লয়মেন্ট (Render + Neon)
 
 রিপোতে `render.yaml` (Blueprint) আছে — GitHub-এ পুশ করা রিপো থেকে Render এক ক্লিকে
-ওয়েব সার্ভিস + PostgreSQL তৈরি করে।
+ওয়েব সার্ভিস তৈরি করে। ডেটাবেস **Neon**-এ (free প্ল্যান, মেয়াদোত্তীর্ণ হয় না)।
 
 ধাপ:
 
@@ -101,21 +101,23 @@ gradlew.bat assembleDebug -PDAILYHISAB_SERVER_URL="https://আপনার-ড�
    (অথবা সরাসরি: `https://dashboard.render.com/blueprint/new?repo=রিপো-URL`)
 3. `ADMIN_PASSWORD` ঘরে Super Admin-এর পাসওয়ার্ড দিন (অন্য সব অটো-সেট হয়)
 4. **Apply / Deploy** — বিল্ড শেষে লাইভ লিংক পাবেন (বর্তমানে `https://daily-hisab-lki9.onrender.com`)
+5. Service → **Environment** → `DATABASE_URL` = Neon-এর connection string
+   (Neon Console → Project → Connect → Connection string, pooled + `sslmode=require`)
 
 আবশ্যক এনভায়রনমেন্ট ভেরিয়েবল:
 
 | ভেরিয়েবল | অর্থ |
 | --- | --- |
-| `DATABASE_URL` | Postgres কানেকশন স্ট্রিং (Render ডেটাবেস থেকে অটো) |
+| `DATABASE_URL` | Neon Postgres কানেকশন স্ট্রিং (Render Environment ট্যাবে সেট করা) |
 | `JWT_SECRET` | লম্বা র‍্যান্ডম সিক্রেট (`render.yaml` অটো-জেনারেট করে) |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME` | প্রথম Super Admin (ডেটাবেস খালি থাকলে তৈরি হয়) |
 | `COOKIE_SECURE` | প্রোডাকশনে `true` (HTTPS-only কুকি) |
 | `PORT` | Render নিজেই দেয় |
 
-> ⚠️ Render free Postgres **৩০ দিন পর মেয়াদোত্তীর্ণ** হয়। স্থায়ী ডেটার জন্য ৩০ দিনের মধ্যে
-> Render paid DB-তে আপগ্রেড করুন অথবা Neon free (`neon.tech`) থেকে কানেকশন স্ট্রিং এনে
-> `DATABASE_URL` বদলে দিন — কোড বদলাতে হবে না, সব ডেটা নতুন DB-তে আলাদাভাবে রাখতে হবে।
+> ℹ️ Neon free প্ল্যান: ০.৫ GB স্টোরেজ, কয়েক মিনিট নিষ্ক্রিয় থাকলে compute স্লিপ করে
+> (পরের কুয়েরিতে ~১ সেকেন্ড রিজিউম), ডেটা মুছে যায় না।
 > Free ওয়েব সার্ভিস ১৫ মিনিট নিষ্ক্রিয় থাকলে স্লিপ করে; প্রথম লোডে ~১ মিনিট সময় লাগতে পারে, তারপর স্বাভাবিক।
+> Render-এর নিজের free Postgres আর ব্যবহার হচ্ছে না — সেটি Dashboard থেকে মুছে ফেলা যায়।
 
 সার্ভার চালু হওয়ার সময় স্কিমা ও Super Admin স্বয়ংক্রিয়ভাবে তৈরি হয়
 (`server/bootstrap.js`) — আলাদা মাইগ্রেশন কমান্ড লাগে না।

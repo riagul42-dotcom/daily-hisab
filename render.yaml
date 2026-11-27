@@ -17,15 +17,6 @@ services:
         value: admin@dailyhisab.com
       - key: ADMIN_PASSWORD
         sync: false
+      # Neon (free, no expiry) — Render ড্যাশবোর্ডের Environment ট্যাবে ভ্যালু সেট করা আছে
       - key: DATABASE_URL
-        fromDatabase:
-          name: daily-hisab-db
-          property: connectionString
-
-databases:
-  # সতর্কতা: Render free Postgres ৩০ দিন পর মেয়াদোত্তীর্ণ হয়।
-  # স্থায়ী ডেটার জন্য Render paid DB বা Neon free ব্যবহার করুন (DATABASE_URL বদলে দিলেই হবে)।
-  - name: daily-hisab-db
-    plan: free
-    databaseName: daily_hisab
-    user: dailyhisab
+        sync: false
