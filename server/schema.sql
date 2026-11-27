@@ -35,6 +35,24 @@ CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses (expense_date);
 CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses (user_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_scope ON expenses (scope);
 
+CREATE TABLE IF NOT EXISTS incomes (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  scope TEXT NOT NULL DEFAULT 'family'
+    CHECK (scope IN ('family', 'business')),
+  category TEXT NOT NULL DEFAULT 'অন্যান্য',
+  source TEXT NOT NULL,
+  amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
+  income_date DATE NOT NULL,
+  note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_incomes_date ON incomes (income_date);
+CREATE INDEX IF NOT EXISTS idx_incomes_user ON incomes (user_id);
+CREATE INDEX IF NOT EXISTS idx_incomes_scope ON incomes (scope);
+
 CREATE OR REPLACE VIEW expenses_detailed AS
 SELECT
   e.id,

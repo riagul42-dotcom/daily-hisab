@@ -126,10 +126,15 @@ export default function Reports() {
       ['তৈরি', fmtDateTime(new Date().toISOString())],
       [],
       ['মোট খরচ (৳)', Math.round(summary.total * 100) / 100],
+      ['মোট আয় (৳)', Math.round((summary.incomeTotal || 0) * 100) / 100],
+      ['বর্তমান ব্যালেন্স (৳)', Math.round((summary.balance || 0) * 100) / 100],
       ['রেকর্ড সংখ্যা', summary.count],
       [],
       ['ক্যাটাগরি', 'রেকর্ড', 'মোট (৳)'],
       ...summary.byCategory.map((c) => [c.category, c.count, Math.round(c.total * 100) / 100]),
+      [],
+      ['আয়ের ক্যাটাগরি', 'রেকর্ড', 'মোট (৳)'],
+      ...(summary.incomeByCategory || []).map((c) => [c.category, c.count, Math.round(c.total * 100) / 100]),
       [],
       [mode === 'month' ? 'তারিখ' : 'মাস', 'রেকর্ড', 'মোট (৳)'],
       ...rowsForPeriod.map((r) => [r.label, r.count, Math.round(r.total * 100) / 100]),
@@ -237,6 +242,14 @@ export default function Reports() {
               <div className="report-stat-value">{fmtTK(summary.total)}</div>
             </div>
             <div className="report-stat">
+              <div className="report-stat-label">মোট আয়</div>
+              <div className="report-stat-value">{fmtTK(summary.incomeTotal || 0)}</div>
+            </div>
+            <div className="report-stat">
+              <div className="report-stat-label">বর্তমান ব্যালেন্স</div>
+              <div className="report-stat-value">{fmtTK(summary.balance || 0)}</div>
+            </div>
+            <div className="report-stat">
               <div className="report-stat-label">রেকর্ড সংখ্যা</div>
               <div className="report-stat-value">{bnDigits(summary.count)}</div>
             </div>
@@ -265,6 +278,28 @@ export default function Reports() {
                         <td className="right">{bnDigits(c.count)}</td>
                         <td className="right strong">{fmtTK(c.total)}</td>
                         <td className="right">{bnDigits(summary.total ? Math.round((c.total / summary.total) * 100) : 0)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {summary.incomeByCategory && summary.incomeByCategory.length > 0 && (
+            <div className="report-section">
+              <h4>আয় ক্যাটাগরি অনুযায়ী</h4>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>ক্যাটাগরি</th><th className="right">রেকর্ড</th><th className="right">মোট</th></tr>
+                  </thead>
+                  <tbody>
+                    {summary.incomeByCategory.map((c) => (
+                      <tr key={`inc-${c.category}`}>
+                        <td>{c.category}</td>
+                        <td className="right">{bnDigits(c.count)}</td>
+                        <td className="right strong">{fmtTK(c.total)}</td>
                       </tr>
                     ))}
                   </tbody>

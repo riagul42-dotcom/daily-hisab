@@ -9,6 +9,7 @@ const { pool } = require('./db');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const expenseRoutes = require('./routes/expenses');
+const incomeRoutes = require('./routes/incomes');
 const reportRoutes = require('./routes/reports');
 
 const app = express();
@@ -22,6 +23,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/incomes', incomeRoutes);
 app.use('/api/reports', reportRoutes);
 
 app.get('/api/health', async (req, res) => {

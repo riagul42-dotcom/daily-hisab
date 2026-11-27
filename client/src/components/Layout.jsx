@@ -7,6 +7,7 @@ import { Icon } from './Icons.jsx';
 const NAV = [
   { to: '/', label: 'ড্যাশবোর্ড', icon: 'dashboard', end: true },
   { to: '/expenses', label: 'খরচের তালিকা', icon: 'receipt' },
+  { to: '/incomes', label: 'আয়ের তালিকা', icon: 'money' },
   { to: '/reports', label: 'রিপোর্ট', icon: 'chart' },
 ];
 const ADMIN_NAV = { to: '/users', label: 'ব্যবহারকারী', icon: 'users' };
@@ -15,6 +16,7 @@ const CREATE_USER_NAV = { to: '/create-user', label: 'নতুন আইডি'
 const TITLES = {
   '/': 'ড্যাশবোর্ড',
   '/expenses': 'খরচের তালিকা',
+  '/incomes': 'আয়ের তালিকা',
   '/reports': 'রিপোর্ট',
   '/users': 'ব্যবহারকারী ব্যবস্থাপনা',
   '/create-user': 'নতুন আইডি খুলুন',

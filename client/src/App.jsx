@@ -5,6 +5,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Expenses from './pages/Expenses.jsx';
+import Incomes from './pages/Incomes.jsx';
 import Reports from './pages/Reports.jsx';
 import Users from './pages/Users.jsx';
 import CreateAccount from './pages/CreateAccount.jsx';
@@ -59,6 +60,7 @@ export default function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="expenses" element={<Expenses />} />
+        <Route path="incomes" element={<Incomes />} />
         <Route path="reports" element={<Reports />} />
         <Route path="users" element={<AdminOnly><Users /></AdminOnly>} />
         <Route path="create-user" element={<UserCreatorOnly><CreateAccount /></UserCreatorOnly>} />

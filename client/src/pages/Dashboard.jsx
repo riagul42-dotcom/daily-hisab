@@ -29,9 +29,9 @@ export default function Dashboard() {
   const [scope, setScope] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [today, setToday] = useState({ total: 0, count: 0 });
-  const [month, setMonth] = useState({ total: 0, count: 0, byCategory: [] });
-  const [year, setYear] = useState({ total: 0, count: 0 });
+  const [today, setToday] = useState({ total: 0, count: 0, incomeTotal: 0 });
+  const [month, setMonth] = useState({ total: 0, count: 0, byCategory: [], incomeTotal: 0 });
+  const [year, setYear] = useState({ total: 0, count: 0, incomeTotal: 0 });
   const [monthly, setMonthly] = useState([]);
   const [recent, setRecent] = useState([]);
 
@@ -128,6 +128,20 @@ export default function Dashboard() {
           hint="প্রতিদিনের গড়"
           icon="receipt"
           tone="blue"
+        />
+        <StatCard
+          label="এই মাসের আয়"
+          value={loading ? '—' : fmtTK(month.incomeTotal)}
+          hint={`${bnDigits(month.incomeCount || 0)} টি রেকর্ড`}
+          icon="money"
+          tone="teal"
+        />
+        <StatCard
+          label="বর্তমান ব্যালেন্স"
+          value={loading ? '—' : fmtTK(month.balance)}
+          hint="সর্বমোট আয় − সর্বমোট খরচ"
+          icon="chart"
+          tone={month.balance < 0 ? 'red' : 'green'}
         />
       </div>
 

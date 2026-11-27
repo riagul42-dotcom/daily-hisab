@@ -659,6 +659,11 @@ input, select, textarea, button {
   color: var(--blue);
 }
 
+.tone-red .stat-icon {
+  background: #fde8e8;
+  color: #b91c1c;
+}
+
 .stat-label {
   font-size: 13px;
   color: var(--muted);

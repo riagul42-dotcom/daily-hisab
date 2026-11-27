@@ -6,7 +6,7 @@ const router = express.Router();
 
 const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
 
-function buildFilters(req) {
+function buildFilters(req, { dates = true } = {}) {
   const { from, to, scope, user_id } = req.query;
   const where = [];
   const values = [];
@@ -20,11 +20,11 @@ function buildFilters(req) {
     where.push(`e.user_id = $${i++}`);
     values.push(Number(user_id));
   }
-  if (from) {
+  if (dates && from) {
     where.push(`e.expense_date >= $${i++}`);
     values.push(from);
   }
-  if (to) {
+  if (dates && to) {
     where.push(`e.expense_date <= $${i++}`);
     values.push(to);
   }
@@ -35,6 +35,35 @@ function buildFilters(req) {
   return { whereSql: where.length ? `WHERE ${where.join(' AND ')}` : '', values, nextIndex: i };
 }
 
+function buildIncomeFilters(req, { dates = true } = {}) {
+  const { from, to, scope, user_id } = req.query;
+  const where = [];
+  const values = [];
+  let i = 1;
+
+  if (!canViewAll(req.user)) {
+    where.push(`i.user_id = $${i++}`);
+    values.push(req.user.id);
+    if (req.user.role === 'family') where.push(`i.scope = 'family'`);
+  } else if (user_id) {
+    where.push(`i.user_id = $${i++}`);
+    values.push(Number(user_id));
+  }
+  if (dates && from) {
+    where.push(`i.income_date >= $${i++}`);
+    values.push(from);
+  }
+  if (dates && to) {
+    where.push(`i.income_date <= $${i++}`);
+    values.push(to);
+  }
+  if (scope === 'family' || scope === 'business') {
+    where.push(`i.scope = $${i++}`);
+    values.push(scope);
+  }
+  return { whereSql: where.length ? `WHERE ${where.join(' AND ')}` : '', values };
+}
+
 router.get('/summary', authenticate, async (req, res, next) => {
   try {
     const { from, to } = req.query;
@@ -42,6 +71,9 @@ router.get('/summary', authenticate, async (req, res, next) => {
     if (to && !isDate(to)) return res.status(400).json({ error: 'শেষ তারিখ ভুল' });
 
     const { whereSql, values, nextIndex } = buildFilters(req);
+    const income = buildIncomeFilters(req);
+    const expenseAll = buildFilters(req, { dates: false });
+    const incomeAll = buildIncomeFilters(req, { dates: false });
 
     const totalsPromise = pool.query(
       `SELECT count(*)::int AS count,
@@ -81,6 +113,30 @@ router.get('/summary', authenticate, async (req, res, next) => {
       values
     );
 
+    const incomeTotalsPromise = pool.query(
+      `SELECT count(*)::int AS count,
+              coalesce(sum(i.amount), 0)::float AS total
+       FROM incomes i ${income.whereSql}`,
+      income.values
+    );
+
+    const incomeByCategoryPromise = pool.query(
+      `SELECT i.category, sum(i.amount)::float AS total, count(*)::int AS count
+       FROM incomes i ${income.whereSql}
+       GROUP BY i.category ORDER BY total DESC`,
+      income.values
+    );
+
+    const expenseAllPromise = pool.query(
+      `SELECT coalesce(sum(e.total), 0)::float AS total FROM expenses e ${expenseAll.whereSql}`,
+      expenseAll.values
+    );
+
+    const incomeAllPromise = pool.query(
+      `SELECT coalesce(sum(i.amount), 0)::float AS total FROM incomes i ${incomeAll.whereSql}`,
+      incomeAll.values
+    );
+
     let byUserPromise = Promise.resolve({ rows: [] });
     if (canViewAll(req.user)) {
       byUserPromise = pool.query(
@@ -91,8 +147,9 @@ router.get('/summary', authenticate, async (req, res, next) => {
       );
     }
 
-    const [totals, byCategory, byScope, byMonth, byDay, byUser] = await Promise.all([
+    const [totals, byCategory, byScope, byMonth, byDay, byUser, incomeTotals, incomeByCategory, expenseAllTotals, incomeAllTotals] = await Promise.all([
       totalsPromise, byCategoryPromise, byScopePromise, byMonthPromise, byDayPromise, byUserPromise,
+      incomeTotalsPromise, incomeByCategoryPromise, expenseAllPromise, incomeAllPromise,
     ]);
 
     const days = byDay.rows.length;
@@ -101,6 +158,10 @@ router.get('/summary', authenticate, async (req, res, next) => {
       count: totals.rows[0].count,
       avgRecord: totals.rows[0].avg_record,
       avgPerDay: days ? Math.round((totals.rows[0].total / days) * 100) / 100 : 0,
+      incomeTotal: incomeTotals.rows[0].total,
+      incomeCount: incomeTotals.rows[0].count,
+      incomeByCategory: incomeByCategory.rows,
+      balance: Math.round((incomeAllTotals.rows[0].total - expenseAllTotals.rows[0].total) * 100) / 100,
       byCategory: byCategory.rows,
       byScope: byScope.rows,
       byMonth: byMonth.rows,
