@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Daily Hisab</string>
     <string name="server_settings">সার্ভার ঠিকানা</string>
-    <string name="server_hint">https://committed-kissing-planner-bookmark.trycloudflare.com</string>
+    <string name="server_hint">https://daily-hisab-lki9.onrender.com</string>
     <string name="connect">সংযোগ করুন</string>
     <string name="cancel">বাতিল</string>
     <string name="retry">আবার চেষ্টা করুন</string>

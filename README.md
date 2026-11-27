@@ -59,14 +59,20 @@ data\start-tunnel.bat
 - পাসওয়ার্ড: `Admin@12345` (`.env`-এর `ADMIN_PASSWORD`)
 - ডেমো ইউজার (seed চালালে): manager/employee/family অ্যাকাউন্ট
 
-## পাবলিক লিংক (এই মুহূর্তে চালু)
+## লাইভ সাইট (Render — স্থায়ী)
 
-- ওয়েবসাইট: https://committed-kissing-planner-bookmark.trycloudflare.com
-- APK ডাউনলোড: https://committed-kissing-planner-bookmark.trycloudflare.com/Daily-Hisab.apk
+- ওয়েবসাইট: **https://daily-hisab-lki9.onrender.com**
+- APK ডাউনলোড: https://daily-hisab-lki9.onrender.com/Daily-Hisab.apk
+- অ্যাডমিন: `admin@dailyhisab.com` (পাসওয়ার্ড Render-এর `ADMIN_PASSWORD` এনভায়রনমেন্ট ভেরিয়েবলে রাখা, রিপোতে নেই)
 
-> ⚠️ এটি Cloudflare **quick tunnel** — কম্পিউটার/টানেল বন্ধ বা রিস্টার্ট হলে লিংক বদলে যায়।
+> কম্পিউটার বন্ধ থাকলেও সাইট চলবে। Free প্ল্যানে ১৫ মিনিট নিষ্ক্রিয় থাকলে সার্ভার স্লিপ করে;
+> প্রথম রিকোয়েস্টে ~৫০ সেকেন্ড লাগতে পারে, পরে স্বাভাবিক।
+
+## লোকাল টেস্ট লিংক (ঐচ্ছিক)
+
+> ⚠️ Cloudflare **quick tunnel** — কম্পিউটার/টানেল বন্ধ বা রিস্টার্ট হলে লিংক বদলে যায়।
 > টানেল চালু করতে: `data\start-tunnel.bat` (নতুন লিংক `data\cloudflared.log`-এ থাকবে, অ্যাপের ভেতরের
-> সেটিংস থেকেও সার্ভার ঠিকানা বদলানো যায়)। স্থায়ী লিংকের জন্য নিচের Render/Neon নির্দেশনা অনুসরণ করুন।
+> সেটিংস থেকেও সার্ভার ঠিকানা বদলানো যায়)। স্থায়ী লিংক উপরের Render সাইট।
 
 ## Android APK
 
@@ -90,11 +96,11 @@ gradlew.bat assembleDebug -PDAILYHISAB_SERVER_URL="https://আপনার-ড�
 
 ধাপ:
 
-1. GitHub-এ রিপো (private) পুশ করুন
+1. GitHub-এ রিপো পুশ করুন (রিপো: `riagul42-dotcom/daily-hisab`, public)
 2. Render Dashboard → **New → Blueprint** → রিপো কানেক্ট করুন
    (অথবা সরাসরি: `https://dashboard.render.com/blueprint/new?repo=রিপো-URL`)
 3. `ADMIN_PASSWORD` ঘরে Super Admin-এর পাসওয়ার্ড দিন (অন্য সব অটো-সেট হয়)
-4. **Apply / Deploy** — বিল্ড শেষে `https://daily-hisab.onrender.com` জাতীয় লিংক পাবেন
+4. **Apply / Deploy** — বিল্ড শেষে লাইভ লিংক পাবেন (বর্তমানে `https://daily-hisab-lki9.onrender.com`)
 
 আবশ্যক এনভায়রনমেন্ট ভেরিয়েবল:
 

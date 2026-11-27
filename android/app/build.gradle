@@ -2,7 +2,7 @@ plugins {
     id 'com.android.application'
 }
 
-def serverUrl = project.findProperty('DAILYHISAB_SERVER_URL') ?: 'https://committed-kissing-planner-bookmark.trycloudflare.com'
+def serverUrl = project.findProperty('DAILYHISAB_SERVER_URL') ?: 'https://daily-hisab-lki9.onrender.com'
 
 android {
     namespace 'com.glowora.app'
