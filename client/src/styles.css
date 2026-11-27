@@ -594,6 +594,36 @@ input, select, textarea, button {
   gap: 2px;
 }
 
+.dash-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dash-controls .field.compact input {
+  min-width: 150px;
+}
+
+@media (max-width: 640px) {
+  .dash-controls {
+    width: 100%;
+  }
+
+  .dash-controls .field.compact {
+    flex: 1;
+  }
+
+  .dash-controls .seg {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .dash-controls .seg-btn {
+    flex: 1;
+  }
+}
+
 .seg-btn {
   border: none;
   background: transparent;

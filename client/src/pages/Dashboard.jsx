@@ -9,7 +9,7 @@ import { useAuth } from '../auth.jsx';
 import StatCard from '../components/StatCard.jsx';
 import { SCOPE_LABELS } from '../constants.js';
 import {
-  bnDigits, firstOfMonthISO, fmtDate, fmtNum, fmtTK, monthShort, startOfYearISO, todayISO,
+  bnDigits, fmtDate, fmtTK, monthLabel, monthShort, toISO, todayISO,
 } from '../format.js';
 
 const PIE_COLORS = ['#0e7a3f', '#16a34a', '#4ade80', '#86efac', '#0ea5e9', '#b7791f', '#d97706', '#f59e0b', '#94a3b8', '#64748b'];
@@ -27,6 +27,8 @@ function ChartTooltip({ active, payload, label }) {
 export default function Dashboard() {
   const { user } = useAuth();
   const [scope, setScope] = useState('all');
+  const currentYm = todayISO().slice(0, 7);
+  const [monthPick, setMonthPick] = useState(currentYm);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [today, setToday] = useState({ total: 0, count: 0, incomeTotal: 0 });
@@ -40,6 +42,16 @@ export default function Dashboard() {
     [scope]
   );
 
+  const [yearNum, monthNum] = monthPick.split('-').map(Number);
+  const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
+  const monthFrom = `${monthPick}-01`;
+  const monthTo = monthPick === currentYm
+    ? todayISO()
+    : toISO(new Date(yearNum, monthNum, 0));
+  const yearFrom = `${yearNum}-01-01`;
+  const yearTo = yearNum === new Date().getFullYear() ? todayISO() : `${yearNum}-12-31`;
+  const avgDays = monthPick === currentYm ? new Date().getDate() : daysInMonth;
+
   useEffect(() => {
     let alive = true;
     setLoading(true);
@@ -47,10 +59,10 @@ export default function Dashboard() {
     const t = todayISO();
     Promise.all([
       api(`/reports/summary?${scopeQuery}from=${t}&to=${t}`),
-      api(`/reports/summary?${scopeQuery}from=${firstOfMonthISO()}&to=${t}`),
-      api(`/reports/summary?${scopeQuery}from=${startOfYearISO()}&to=${t}`),
+      api(`/reports/summary?${scopeQuery}from=${monthFrom}&to=${monthTo}`),
+      api(`/reports/summary?${scopeQuery}from=${yearFrom}&to=${yearTo}`),
       api(`/reports/monthly?months=12&${scopeQuery.replace(/&$/, '')}`),
-      api(`/expenses?limit=8&${scopeQuery.replace(/&$/, '')}`),
+      api(`/expenses?from=${monthFrom}&to=${monthTo}&limit=8&${scopeQuery.replace(/&$/, '')}`),
     ])
       .then(([td, mo, yr, ml, rc]) => {
         if (!alive) return;
@@ -71,7 +83,7 @@ export default function Dashboard() {
     return () => {
       alive = false;
     };
-  }, [scopeQuery]);
+  }, [scopeQuery, monthPick]);
 
   const pieData = (month.byCategory || []).map((c) => ({ name: c.category, value: Math.round(c.total) }));
 
@@ -84,16 +96,27 @@ export default function Dashboard() {
           <h2 className="welcome">স্বাগতম, {user?.name}</h2>
           <p className="muted">আপনার খরচের সারসংক্ষেপ এক নজরে</p>
         </div>
-        <div className="seg">
-          {[['all', 'সব'], ['family', 'পারিবারিক'], ['business', 'ব্যবসায়িক']].map(([v, label]) => (
-            <button
-              key={v}
-              className={`seg-btn ${scope === v ? 'active' : ''}`}
-              onClick={() => setScope(v)}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="dash-controls">
+          <label className="field compact">
+            <span>মাস বাছাই</span>
+            <input
+              type="month"
+              value={monthPick}
+              max={currentYm}
+              onChange={(e) => setMonthPick(e.target.value || currentYm)}
+            />
+          </label>
+          <div className="seg">
+            {[['all', 'সব'], ['family', 'পারিবারিক'], ['business', 'ব্যবসায়িক']].map(([v, label]) => (
+              <button
+                key={v}
+                className={`seg-btn ${scope === v ? 'active' : ''}`}
+                onClick={() => setScope(v)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -106,28 +129,28 @@ export default function Dashboard() {
           tone="green"
         />
         <StatCard
-          label="এই মাসের খরচ"
+          label={`${monthLabel(monthPick)} মাসের খরচ`}
           value={loading ? '—' : fmtTK(month.total)}
           hint={`${bnDigits(month.count)} টি রেকর্ড`}
           icon="calendar"
           tone="teal"
         />
         <StatCard
-          label="এই বছরের খরচ"
+          label={`${bnDigits(yearNum)} সালের খরচ`}
           value={loading ? '—' : fmtTK(year.total)}
           hint={`${bnDigits(year.count)} টি রেকর্ড`}
           icon="chart"
           tone="amber"
         />
         <StatCard
-          label="এই মাসের গড় খরচ"
-          value={loading || !month.count ? '—' : fmtTK(month.total / new Date().getDate())}
+          label="মাসের গড় খরচ"
+          value={loading || !month.count ? '—' : fmtTK(month.total / avgDays)}
           hint="প্রতিদিনের গড়"
           icon="receipt"
           tone="blue"
         />
         <StatCard
-          label="এই মাসের আয়"
+          label={`${monthLabel(monthPick)} মাসের আয়`}
           value={loading ? '—' : fmtTK(month.incomeTotal)}
           hint={`${bnDigits(month.incomeCount || 0)} টি রেকর্ড`}
           icon="money"
@@ -162,10 +185,10 @@ export default function Dashboard() {
 
         <div className="card">
           <div className="card-head">
-            <h3>ক্যাটাগরি অনুযায়ী (এই মাস)</h3>
+            <h3>ক্যাটাগরি অনুযায়ী ({monthLabel(monthPick)})</h3>
           </div>
           {pieData.length === 0 ? (
-            <div className="empty">এই মাসে এখনো কোনো খরচ নেই</div>
+            <div className="empty">এই মাসে কোনো খরচ নেই</div>
           ) : (
             <div style={{ width: '100%', height: 280 }}>
               <ResponsiveContainer>
@@ -186,11 +209,11 @@ export default function Dashboard() {
 
       <div className="card">
         <div className="card-head">
-          <h3>সাম্প্রতিক খরচ</h3>
+          <h3>{monthLabel(monthPick)} মাসের খরচ</h3>
           <Link className="link" to="/expenses">সব দেখুন</Link>
         </div>
         {recent.length === 0 ? (
-          <div className="empty">এখনো কোনো খরচ যোগ করা হয়নি</div>
+          <div className="empty">এই মাসে কোনো খরচ যোগ করা হয়নি</div>
         ) : (
           <div className="table-wrap">
             <table>
