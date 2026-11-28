@@ -42,7 +42,7 @@ export default function Layout() {
     const load = async () => {
       try {
         const data = await api('/messages/unread');
-        if (alive) setUnread(data.unread || 0);
+        if (alive) setUnread(data.total || 0);
       } catch {
         /* নীরবে বাদ */
       }

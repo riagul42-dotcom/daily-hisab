@@ -31,7 +31,26 @@ router.get('/contacts', async (req, res, next) => {
        ORDER BY lm.created_at DESC NULLS LAST, u.name ASC`,
       [req.user.id]
     );
-    res.json({ contacts: rows });
+
+    const { rows: lastGroup } = await pool.query(
+      `SELECT g.body AS last_body, g.created_at AS last_at,
+              g.sender_id AS last_sender_id, u.name AS last_sender_name
+       FROM group_messages g
+       JOIN users u ON u.id = g.sender_id
+       ORDER BY g.id DESC
+       LIMIT 1`
+    );
+    const { rows: groupUnread } = await pool.query(
+      `SELECT count(*)::int AS unread
+       FROM group_messages g
+       WHERE g.sender_id <> $1
+         AND g.id > COALESCE(
+           (SELECT last_read_id FROM group_reads WHERE user_id = $1), 0)`,
+      [req.user.id]
+    );
+    const group = { ...(lastGroup[0] || {}), unread: groupUnread[0].unread };
+
+    res.json({ contacts: rows, group });
   } catch (err) {
     next(err);
   }
@@ -40,10 +59,64 @@ router.get('/contacts', async (req, res, next) => {
 router.get('/unread', async (req, res, next) => {
   try {
     const { rows } = await pool.query(
-      'SELECT count(*)::int AS unread FROM messages WHERE recipient_id = $1 AND read_at IS NULL',
+      `SELECT
+         (SELECT count(*)::int FROM messages WHERE recipient_id = $1 AND read_at IS NULL) AS direct,
+         (SELECT count(*)::int FROM group_messages g
+          WHERE g.sender_id <> $1
+            AND g.id > COALESCE(
+              (SELECT last_read_id FROM group_reads WHERE user_id = $1), 0)) AS grp`,
       [req.user.id]
     );
-    res.json({ unread: rows[0].unread });
+    const { direct, grp } = rows[0];
+    res.json({ unread: direct, group: grp, total: direct + grp });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/group', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT g.id, g.sender_id, g.body, g.created_at, u.name AS sender_name
+       FROM (
+         SELECT id, sender_id, body, created_at
+         FROM group_messages
+         ORDER BY id DESC
+         LIMIT 100
+       ) g
+       JOIN users u ON u.id = g.sender_id
+       ORDER BY g.id ASC`
+    );
+
+    await pool.query(
+      `INSERT INTO group_reads (user_id, last_read_id)
+       VALUES ($1, COALESCE((SELECT max(id) FROM group_messages), 0))
+       ON CONFLICT (user_id) DO UPDATE SET last_read_id = EXCLUDED.last_read_id
+       WHERE group_reads.last_read_id < EXCLUDED.last_read_id`,
+      [req.user.id]
+    );
+
+    res.json({ messages: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/group', async (req, res, next) => {
+  try {
+    const body = String(req.body.body || '').trim();
+    if (!body) return res.status(400).json({ error: 'বার্তা লিখুন' });
+    if (body.length > 2000) {
+      return res.status(400).json({ error: 'বার্তা ২০০০ অক্ষরের মধ্যে দিন' });
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO group_messages (sender_id, body)
+       VALUES ($1, $2)
+       RETURNING id, sender_id, body, created_at`,
+      [req.user.id, body]
+    );
+    res.status(201).json({ message: { ...rows[0], sender_name: req.user.name } });
   } catch (err) {
     next(err);
   }

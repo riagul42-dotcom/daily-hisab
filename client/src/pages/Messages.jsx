@@ -17,9 +17,12 @@ function lastTime(contact) {
   return iso === toISO(new Date()) ? '' : fmtDate(iso);
 }
 
+const GROUP_CHAT = { id: 'group', name: 'সবার গ্রুপ', isGroup: true };
+
 export default function Messages() {
   const { user } = useAuth();
   const [contacts, setContacts] = useState([]);
+  const [group, setGroup] = useState({ unread: 0 });
   const [selected, setSelected] = useState(null);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
@@ -35,8 +38,9 @@ export default function Messages() {
         const data = await api('/messages/contacts');
         if (!alive) return;
         setContacts(data.contacts);
+        setGroup(data.group || { unread: 0 });
         setSelected((prev) => {
-          if (!prev) return prev;
+          if (!prev || prev.isGroup) return prev;
           return data.contacts.find((c) => c.id === prev.id) || prev;
         });
       } catch (err) {
@@ -61,8 +65,14 @@ export default function Messages() {
     let alive = true;
     const load = async () => {
       try {
-        const data = await api(`/messages/${selected.id}`);
-        if (alive) setMessages(data.messages);
+        const data = selected.isGroup
+          ? await api('/messages/group')
+          : await api(`/messages/${selected.id}`);
+        if (!alive) return;
+        setMessages(data.messages);
+        if (selected.isGroup) {
+          setGroup((prev) => (prev.unread ? { ...prev, unread: 0 } : prev));
+        }
       } catch (err) {
         if (alive) setError(err.message);
       }
@@ -73,7 +83,7 @@ export default function Messages() {
       alive = false;
       clearInterval(timer);
     };
-  }, [selected?.id]);
+  }, [selected]);
 
   useEffect(() => {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ block: 'end' });
@@ -82,7 +92,11 @@ export default function Messages() {
   const openThread = (contact) => {
     setError('');
     setSelected(contact);
-    setContacts((list) => list.map((c) => (c.id === contact.id ? { ...c, unread: 0 } : c)));
+    if (contact.isGroup) {
+      setGroup((prev) => ({ ...prev, unread: 0 }));
+    } else {
+      setContacts((list) => list.map((c) => (c.id === contact.id ? { ...c, unread: 0 } : c)));
+    }
   };
 
   const send = async (e) => {
@@ -92,12 +106,14 @@ export default function Messages() {
     setSending(true);
     setError('');
     try {
-      await api('/messages', {
+      await api(selected.isGroup ? '/messages/group' : '/messages', {
         method: 'POST',
-        body: JSON.stringify({ recipient_id: selected.id, body }),
+        body: JSON.stringify(selected.isGroup ? { body } : { recipient_id: selected.id, body }),
       });
       setDraft('');
-      const data = await api(`/messages/${selected.id}`);
+      const data = selected.isGroup
+        ? await api('/messages/group')
+        : await api(`/messages/${selected.id}`);
       setMessages(data.messages);
     } catch (err) {
       setError(err.message);
@@ -113,7 +129,7 @@ export default function Messages() {
       <div className="page-row">
         <div>
           <h2 className="welcome">মেসেঞ্জার</h2>
-          <p className="muted">সব অ্যাকাউন্টের সাথে সরাসরি কথা বলুন</p>
+          <p className="muted">সবার গ্রুপ চ্যাট ও সরাসরি বার্তা</p>
         </div>
       </div>
 
@@ -121,6 +137,24 @@ export default function Messages() {
         <aside className="chat-card chat-people">
           <div className="chat-people-head">সবাই ({bnDigits(contacts.length)})</div>
           <div className="chat-people-list">
+            <button
+              type="button"
+              className={`chat-person group ${selected?.id === GROUP_CHAT.id ? 'active' : ''}`}
+              onClick={() => openThread(GROUP_CHAT)}
+            >
+              <span className="avatar sm">স</span>
+              <span className="chat-person-body">
+                <span className="chat-person-top">
+                  <span className="chat-person-name">সবার গ্রুপ</span>
+                  {group.unread > 0 && <span className="chat-unread">{bnDigits(group.unread)}</span>}
+                </span>
+                <span className="chat-person-last">
+                  {group.last_body
+                    ? `${group.last_sender_id === user?.id ? 'আপনি' : group.last_sender_name}: ${group.last_body}`
+                    : 'সব অ্যাকাউন্ট একসাথে কথা বলুন'}
+                </span>
+              </span>
+            </button>
             {loadingContacts ? (
               <div className="chat-empty">লোড হচ্ছে…</div>
             ) : contacts.length === 0 ? (
@@ -162,10 +196,16 @@ export default function Messages() {
                 >
                   <Icon name="back" />
                 </button>
-                <span className="avatar sm">{selected.name.slice(0, 1)}</span>
+                <span className="avatar sm">
+                  {selected.isGroup ? 'স' : selected.name.slice(0, 1)}
+                </span>
                 <div className="chat-thread-meta">
                   <div className="chat-thread-title">{selected.name}</div>
-                  <div className="chat-thread-sub">{ROLE_LABELS[selected.role] || ''}</div>
+                  <div className="chat-thread-sub">
+                    {selected.isGroup
+                      ? `${bnDigits(contacts.length + 1)} জন সদস্য`
+                      : ROLE_LABELS[selected.role] || ''}
+                  </div>
                 </div>
               </div>
 
@@ -180,6 +220,9 @@ export default function Messages() {
                       <div key={m.id} className="chat-msg-group">
                         {day !== prevDay && <div className="chat-date">{fmtDate(day)}</div>}
                         <div className={`chat-msg ${m.sender_id === user?.id ? 'mine' : 'theirs'}`}>
+                          {selected.isGroup && m.sender_id !== user?.id && (
+                            <div className="chat-msg-sender">{m.sender_name}</div>
+                          )}
                           {m.body}
                           <div className="chat-msg-time">{fmtDateTime(m.created_at).split(', ')[1]}</div>
                         </div>
@@ -206,7 +249,7 @@ export default function Messages() {
             </>
           ) : (
             <div className="chat-empty">
-              বাম দিকের তালিকা থেকে একজনকে বেছে নিয়ে কথা শুরু করুন
+              বাম তালিকা থেকে সবার গ্রুপ বা একজনকে বেছে নিয়ে কথা শুরু করুন
             </div>
           )}
         </section>
