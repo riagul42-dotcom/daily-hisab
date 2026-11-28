@@ -90,6 +90,18 @@ export function Icon({ name, size = 20 }) {
       return (
         <svg {...common}><path d="M20 6 9 17l-5-5" /></svg>
       );
+    case 'chat':
+      return (
+        <svg {...common}><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H8l-4.5 3 1.2-4.1A8.5 8.5 0 1 1 21 11.5Z" /><path d="M8.5 11h.01M12 11h.01M15.5 11h.01" /></svg>
+      );
+    case 'send':
+      return (
+        <svg {...common}><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4Z" /></svg>
+      );
+    case 'back':
+      return (
+        <svg {...common}><path d="M15 18l-6-6 6-6" /></svg>
+      );
     default:
       return null;
   }

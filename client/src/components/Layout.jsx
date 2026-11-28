@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { ROLE_LABELS } from '../constants.js';
+import { bnDigits } from '../format.js';
 import { Icon } from './Icons.jsx';
 
 const NAV = [
@@ -9,6 +11,7 @@ const NAV = [
   { to: '/expenses', label: 'খরচের তালিকা', icon: 'receipt' },
   { to: '/incomes', label: 'আয়ের তালিকা', icon: 'money' },
   { to: '/reports', label: 'রিপোর্ট', icon: 'chart' },
+  { to: '/messages', label: 'মেসেঞ্জার', icon: 'chat' },
 ];
 const ADMIN_NAV = { to: '/users', label: 'ব্যবহারকারী', icon: 'users' };
 const CREATE_USER_NAV = { to: '/create-user', label: 'নতুন আইডি', icon: 'plus' };
@@ -18,6 +21,7 @@ const TITLES = {
   '/expenses': 'খরচের তালিকা',
   '/incomes': 'আয়ের তালিকা',
   '/reports': 'রিপোর্ট',
+  '/messages': 'মেসেঞ্জার',
   '/users': 'ব্যবহারকারী ব্যবস্থাপনা',
   '/create-user': 'নতুন আইডি খুলুন',
 };
@@ -25,11 +29,30 @@ const TITLES = {
 export default function Layout() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
     setOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const data = await api('/messages/unread');
+        if (alive) setUnread(data.unread || 0);
+      } catch {
+        /* নীরবে বাদ */
+      }
+    };
+    load();
+    const timer = setInterval(load, 20000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
   }, [location.pathname]);
 
   const nav = [
@@ -66,6 +89,9 @@ export default function Layout() {
             >
               <Icon name={item.icon} />
               <span>{item.label}</span>
+              {item.to === '/messages' && unread > 0 && (
+                <span className="nav-badge">{bnDigits(unread)}</span>
+              )}
             </NavLink>
           ))}
         </nav>

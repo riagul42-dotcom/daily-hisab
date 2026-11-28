@@ -11,6 +11,7 @@ const userRoutes = require('./routes/users');
 const expenseRoutes = require('./routes/expenses');
 const incomeRoutes = require('./routes/incomes');
 const reportRoutes = require('./routes/reports');
+const messageRoutes = require('./routes/messages');
 
 const app = express();
 app.disable('x-powered-by');
@@ -25,6 +26,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/incomes', incomeRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/messages', messageRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {

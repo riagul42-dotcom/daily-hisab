@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import Expenses from './pages/Expenses.jsx';
 import Incomes from './pages/Incomes.jsx';
 import Reports from './pages/Reports.jsx';
+import Messages from './pages/Messages.jsx';
 import Users from './pages/Users.jsx';
 import CreateAccount from './pages/CreateAccount.jsx';
 
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="expenses" element={<Expenses />} />
         <Route path="incomes" element={<Incomes />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="messages" element={<Messages />} />
         <Route path="users" element={<AdminOnly><Users /></AdminOnly>} />
         <Route path="create-user" element={<AdminOnly><CreateAccount /></AdminOnly>} />
       </Route>

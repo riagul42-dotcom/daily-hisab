@@ -53,6 +53,18 @@ CREATE INDEX IF NOT EXISTS idx_incomes_date ON incomes (income_date);
 CREATE INDEX IF NOT EXISTS idx_incomes_user ON incomes (user_id);
 CREATE INDEX IF NOT EXISTS idx_incomes_scope ON incomes (scope);
 
+CREATE TABLE IF NOT EXISTS messages (
+  id SERIAL PRIMARY KEY,
+  sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  read_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages (sender_id, recipient_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages (recipient_id) WHERE read_at IS NULL;
+
 CREATE OR REPLACE VIEW expenses_detailed AS
 SELECT
   e.id,
