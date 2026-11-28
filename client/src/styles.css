@@ -303,6 +303,13 @@ input, select, textarea, button {
   border-radius: 8px;
 }
 
+.btn.sm {
+  padding: 7px 12px;
+  font-size: 13.5px;
+  gap: 6px;
+  border-radius: 9px;
+}
+
 .danger-ghost {
   background: #fff5f4;
   border-color: #f3c7c2;

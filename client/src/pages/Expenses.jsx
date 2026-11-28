@@ -460,8 +460,8 @@ export default function Expenses() {
             মোট {fmtTK(data.sum)} · {bnDigits(data.total)} টি রেকর্ড
           </p>
         </div>
-        <button className="btn primary" onClick={() => setModal('new')}>
-          <Icon name="plus" size={18} /> নতুন খরচ
+        <button className="btn primary sm" onClick={() => setModal('new')}>
+          <Icon name="plus" size={16} /> নতুন খরচ
         </button>
       </div>
 
