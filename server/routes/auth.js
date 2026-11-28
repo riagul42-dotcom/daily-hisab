@@ -54,7 +54,6 @@ router.post('/login', loginLimiter, async (req, res, next) => {
         phone: user.phone,
         role: user.role,
         account_type: user.account_type,
-        can_create_users: user.can_create_users,
       },
     });
   } catch (err) {

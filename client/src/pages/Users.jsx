@@ -89,7 +89,6 @@ export default function Users() {
                   <th>ইমেইল</th>
                   <th>ভূমিকা</th>
                   <th>ধরন</th>
-                  <th>আইডি খোলার অনুমতি</th>
                   <th>স্ট্যাটাস</th>
                   <th className="right">রেকর্ড</th>
                   <th>যোগদান</th>
@@ -121,25 +120,6 @@ export default function Users() {
                         </select>
                       </td>
                       <td className="muted">{SCOPE_LABELS[u.account_type]}</td>
-                      <td>
-                        {u.role === 'superadmin' ? (
-                          <span className="badge status active">সবসময়</span>
-                        ) : (
-                          <button
-                            className={`btn tiny ${u.can_create_users ? 'success-ghost' : ''}`}
-                            title="এই ব্যবহারকারী নতুন আইডি খুলতে পারবে কি না"
-                            onClick={() => patch(
-                              u.id,
-                              { can_create_users: !u.can_create_users },
-                              u.can_create_users
-                                ? 'আইডি খোলার অনুমতি বন্ধ করা হয়েছে'
-                                : 'আইডি খোলার অনুমতি দেওয়া হয়েছে'
-                            )}
-                          >
-                            {u.can_create_users ? 'অনুমতি আছে' : 'অনুমতি দিন'}
-                          </button>
-                        )}
-                      </td>
                       <td>
                         <span className={`badge status ${u.status}`}>
                           {u.status === 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
@@ -182,14 +162,13 @@ export default function Users() {
         <strong>ভূমিকার অনুমতি:</strong> সুপার অ্যাডমিন — সবকিছু; ম্যানেজার — সবার খরচ ও রিপোর্ট;
         কর্মচারী — নিজের এন্ট্রি; পারিবারিক ব্যবহারকারী — শুধু নিজের পারিবারিক খরচ।
         <br />
-        <strong>আইডি খোলার অনুমতি:</strong> "অনুমতি দিন" চাপলে সেই ব্যবহারকারী নিজে নতুন
-        পারিবারিক/কর্মচারী আইডি খুলতে পারবে (তাদের সাইডবারে "নতুন আইডি" অপশন দেখাবে)।
+        <strong>নতুন আইডি:</strong> শুধু সুপার অ্যাডমিন নতুন আইডি খুলতে পারবেন; অন্যান্য
+        ব্যবহারকারী নিজে থেকে নিবন্ধন করতে পারবে না।
       </div>
 
       {adding && (
         <Modal title="নতুন ব্যবহারকারী" onClose={() => setAdding(false)}>
           <AddUserForm
-            canAssignRoles
             onCancel={() => setAdding(false)}
             onSaved={() => {
               setAdding(false);

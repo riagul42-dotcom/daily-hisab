@@ -34,8 +34,7 @@ export default function Layout() {
 
   const nav = [
     ...NAV,
-    ...(user?.role === 'superadmin' ? [ADMIN_NAV] : []),
-    ...(user?.role === 'superadmin' || user?.can_create_users ? [CREATE_USER_NAV] : []),
+    ...(user?.role === 'superadmin' ? [ADMIN_NAV, CREATE_USER_NAV] : []),
   ];
 
   const handleLogout = async () => {

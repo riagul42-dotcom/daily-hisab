@@ -31,13 +31,6 @@ function AdminOnly({ children }) {
   return children;
 }
 
-function UserCreatorOnly({ children }) {
-  const { user } = useAuth();
-  const allowed = user?.role === 'superadmin' || user?.can_create_users;
-  if (!allowed) return <Navigate to="/" replace />;
-  return children;
-}
-
 function PublicOnly({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <Splash />;
@@ -61,7 +54,7 @@ export default function App() {
         <Route path="incomes" element={<Incomes />} />
         <Route path="reports" element={<Reports />} />
         <Route path="users" element={<AdminOnly><Users /></AdminOnly>} />
-        <Route path="create-user" element={<UserCreatorOnly><CreateAccount /></UserCreatorOnly>} />
+        <Route path="create-user" element={<AdminOnly><CreateAccount /></AdminOnly>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

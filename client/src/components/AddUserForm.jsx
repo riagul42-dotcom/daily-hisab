@@ -1,24 +1,18 @@
 import { useState } from 'react';
 import { api } from '../api.js';
 
-const ALL_ROLES = [
+const ROLE_OPTIONS = [
   ['manager', 'ম্যানেজার'],
   ['employee', 'কর্মচারী'],
   ['family', 'পারিবারিক ব্যবহারকারী'],
   ['superadmin', 'সুপার অ্যাডমিন'],
 ];
 
-const LIMITED_ROLES = [
-  ['family', 'পারিবারিক ব্যবহারকারী'],
-  ['employee', 'কর্মচারী'],
-];
-
-export default function AddUserForm({ canAssignRoles = false, onSaved, onCancel }) {
-  const roleOptions = canAssignRoles ? ALL_ROLES : LIMITED_ROLES;
+export default function AddUserForm({ onSaved, onCancel }) {
   const [form, setForm] = useState({
     name: '', email: '', phone: '', password: '',
-    role: canAssignRoles ? 'employee' : 'family',
-    account_type: canAssignRoles ? 'business' : 'family',
+    role: 'employee',
+    account_type: 'business',
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -68,7 +62,7 @@ export default function AddUserForm({ canAssignRoles = false, onSaved, onCancel 
       <label className="field">
         <span>ভূমিকা</span>
         <select value={form.role} onChange={set('role')}>
-          {roleOptions.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+          {ROLE_OPTIONS.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
         </select>
       </label>
       <label className="field">

@@ -40,7 +40,7 @@ async function authenticate(req, res, next) {
 
     const payload = jwt.verify(token, jwtSecret());
     const { rows } = await pool.query(
-      'SELECT id, name, email, phone, role, account_type, status, can_create_users FROM users WHERE id = $1',
+      'SELECT id, name, email, phone, role, account_type, status FROM users WHERE id = $1',
       [payload.uid]
     );
     const user = rows[0];

@@ -7,15 +7,6 @@ const router = express.Router();
 
 const ROLES = ['superadmin', 'manager', 'employee', 'family'];
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-const canCreateUsers = (user) =>
-  Boolean(user && (user.role === 'superadmin' || user.can_create_users));
-
-function requireUserCreator(req, res, next) {
-  if (!canCreateUsers(req.user)) {
-    return res.status(403).json({ error: 'নতুন আইডি খোলার অনুমতি নেই' });
-  }
-  next();
-}
 
 router.use(authenticate);
 
@@ -35,7 +26,7 @@ router.get('/', requireRole('superadmin'), async (req, res, next) => {
   try {
     const { rows } = await pool.query(
       `SELECT u.id, u.name, u.email, u.phone, u.role, u.account_type, u.status,
-              u.can_create_users, u.created_at,
+              u.created_at,
               (SELECT count(*) FROM expenses e WHERE e.user_id = u.id) AS expense_count
        FROM users u
        ORDER BY u.created_at ASC`
@@ -46,7 +37,7 @@ router.get('/', requireRole('superadmin'), async (req, res, next) => {
   }
 });
 
-router.post('/', requireUserCreator, async (req, res, next) => {
+router.post('/', requireRole('superadmin'), async (req, res, next) => {
   try {
     const name = String(req.body.name || '').trim();
     const email = String(req.body.email || '').trim().toLowerCase();
@@ -61,9 +52,6 @@ router.post('/', requireUserCreator, async (req, res, next) => {
       return res.status(400).json({ error: 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে' });
     }
     if (!ROLES.includes(role)) return res.status(400).json({ error: 'ভূমিকা সঠিক নয়' });
-    if (req.user.role !== 'superadmin' && !['family', 'employee'].includes(role)) {
-      return res.status(403).json({ error: 'শুধু পারিবারিক বা কর্মচারী অ্যাকাউন্ট তৈরি করার অনুমতি আছে' });
-    }
     if (!['family', 'business'].includes(accountType)) {
       return res.status(400).json({ error: 'অ্যাকাউন্টের ধরন সঠিক নয়' });
     }
@@ -78,7 +66,7 @@ router.post('/', requireUserCreator, async (req, res, next) => {
     const { rows } = await pool.query(
       `INSERT INTO users (name, email, phone, password_hash, role, account_type)
        VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, name, email, phone, role, account_type, status, can_create_users, created_at`,
+       RETURNING id, name, email, phone, role, account_type, status, created_at`,
       [name, email, phone, hash, role, finalType]
     );
     res.status(201).json({ user: rows[0] });
@@ -137,10 +125,6 @@ router.patch('/:id', requireRole('superadmin'), async (req, res, next) => {
       updates.push(`status = $${i++}`);
       values.push(req.body.status);
     }
-    if (req.body.can_create_users !== undefined) {
-      updates.push(`can_create_users = $${i++}`);
-      values.push(Boolean(req.body.can_create_users));
-    }
     if (req.body.password !== undefined) {
       const password = String(req.body.password);
       if (password.length < 8) {
@@ -157,7 +141,7 @@ router.patch('/:id', requireRole('superadmin'), async (req, res, next) => {
     values.push(id);
     const { rows } = await pool.query(
       `UPDATE users SET ${updates.join(', ')} WHERE id = $${i}
-       RETURNING id, name, email, phone, role, account_type, status, can_create_users, created_at`,
+       RETURNING id, name, email, phone, role, account_type, status, created_at`,
       values
     );
     res.json({ user: rows[0] });
