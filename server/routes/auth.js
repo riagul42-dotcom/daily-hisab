@@ -21,16 +21,25 @@ const loginLimiter = rateLimit({
 
 router.post('/login', loginLimiter, async (req, res, next) => {
   try {
-    const email = String(req.body.email || '').trim().toLowerCase();
+    const identifier = String(req.body.identifier || req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
-    if (!email || !password) {
-      return res.status(400).json({ error: 'ইমেইল ও পাসওয়ার্ড দিন' });
+    if (!identifier || !password) {
+      return res.status(400).json({ error: 'ইমেইল/মোবাইল ও পাসওয়ার্ড দিন' });
     }
 
-    const { rows } = await pool.query('SELECT * FROM users WHERE lower(email) = $1', [email]);
+    const digits = identifier.replace(/[^0-9]/g, '');
+    const { rows } = await pool.query(
+      `SELECT * FROM users
+       WHERE lower(email) = $1
+          OR ($2 <> ''
+              AND length(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g')) >= 10
+              AND right(regexp_replace(coalesce(phone, ''), '[^0-9]', '', 'g'), 10) = right($2, 10))
+       LIMIT 1`,
+      [identifier, digits]
+    );
     const user = rows[0];
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-      return res.status(401).json({ error: 'ইমেইল বা পাসওয়ার্ড ভুল' });
+      return res.status(401).json({ error: 'ইমেইল/মোবাইল বা পাসওয়ার্ড ভুল' });
     }
     if (user.status !== 'active') {
       return res.status(403).json({ error: 'আপনার অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে' });

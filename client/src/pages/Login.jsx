@@ -6,7 +6,7 @@ import { Icon } from '../components/Icons.jsx';
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -16,7 +16,7 @@ export default function Login() {
     setError('');
     setBusy(true);
     try {
-      await login(email.trim(), password);
+      await login(identifier.trim(), password);
       navigate('/', { replace: true });
     } catch (err) {
       setError(err.message);
@@ -47,13 +47,16 @@ export default function Login() {
           {error && <div className="alert error">{error}</div>}
 
           <label className="field">
-            <span>ইমেইল</span>
+            <span>ইমেইল বা মোবাইল নম্বর</span>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
+              type="text"
+              inputMode="email"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="you@example.com বা 01XXXXXXXXX"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
               required
             />
           </label>

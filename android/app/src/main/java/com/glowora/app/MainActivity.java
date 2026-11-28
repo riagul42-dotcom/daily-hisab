@@ -77,7 +77,7 @@ public class MainActivity extends Activity {
         serverAddress.setText(getString(R.string.current_server, serverUrl));
         retryButton.setOnClickListener(view -> loadSite());
         settingsButton.setOnClickListener(view -> showServerSettings());
-        progressBar.setIndeterminateTintList(ColorStateList.valueOf(Color.rgb(14, 122, 63)));
+        progressBar.setIndeterminateTintList(ColorStateList.valueOf(Color.rgb(5, 150, 105)));
 
         configureWebView();
         loadSite();
@@ -87,6 +87,7 @@ public class MainActivity extends Activity {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        settings.setTextZoom(88);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setAllowFileAccessFromFileURLs(false);
@@ -99,7 +100,7 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             settings.setSafeBrowsingEnabled(true);
         }
-        webView.setBackgroundColor(Color.rgb(244, 248, 245));
+        webView.setBackgroundColor(Color.rgb(238, 247, 241));
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
