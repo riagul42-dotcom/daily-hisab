@@ -536,9 +536,11 @@ export default function Expenses() {
                           <button className="icon-btn" onClick={() => setModal(e)} title="সম্পাদনা">
                             <Icon name="edit" size={17} />
                           </button>
-                          <button className="icon-btn danger" onClick={() => remove(e)} title="মুছুন">
-                            <Icon name="trash" size={17} />
-                          </button>
+                          {canManageAll && (
+                            <button className="icon-btn danger" onClick={() => remove(e)} title="মুছুন">
+                              <Icon name="trash" size={17} />
+                            </button>
+                          )}
                         </div>
                       )}
                     </td>

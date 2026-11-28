@@ -1,6 +1,6 @@
 const express = require('express');
 const { pool } = require('../db');
-const { authenticate, canViewAll } = require('../auth');
+const { authenticate, requireRole, canViewAll } = require('../auth');
 
 const router = express.Router();
 
@@ -270,11 +270,12 @@ router.put('/:id', authenticate, async (req, res, next) => {
   }
 });
 
-router.delete('/:id', authenticate, async (req, res, next) => {
+router.delete('/:id', authenticate, requireRole('superadmin', 'manager'), async (req, res, next) => {
   try {
-    const existing = await loadOwned(req, res);
-    if (!existing) return;
-    await pool.query('DELETE FROM expenses WHERE id = $1', [existing.id]);
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: 'ভুল আইডি' });
+    const { rowCount } = await pool.query('DELETE FROM expenses WHERE id = $1', [id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'রেকর্ড পাওয়া যায়নি' });
     res.json({ ok: true });
   } catch (err) {
     next(err);
