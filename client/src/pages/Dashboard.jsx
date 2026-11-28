@@ -28,12 +28,16 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [scope, setScope] = useState('all');
   const currentYm = todayISO().slice(0, 7);
+  const currentYear = new Date().getFullYear();
+  const [mode, setMode] = useState('month');
+  const [datePick, setDatePick] = useState(todayISO());
   const [monthPick, setMonthPick] = useState(currentYm);
+  const [yearPick, setYearPick] = useState(String(currentYear));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [today, setToday] = useState({ total: 0, count: 0, incomeTotal: 0 });
-  const [month, setMonth] = useState({ total: 0, count: 0, byCategory: [], incomeTotal: 0 });
-  const [year, setYear] = useState({ total: 0, count: 0, incomeTotal: 0 });
+  const [period, setPeriod] = useState({ total: 0, count: 0, byCategory: [], incomeTotal: 0 });
+  const [yearData, setYearData] = useState({ total: 0, count: 0, incomeTotal: 0 });
   const [monthly, setMonthly] = useState([]);
   const [recent, setRecent] = useState([]);
   const [refreshTick, setRefreshTick] = useState(0);
@@ -55,15 +59,31 @@ export default function Dashboard() {
     [scope]
   );
 
-  const [yearNum, monthNum] = monthPick.split('-').map(Number);
-  const daysInMonth = new Date(yearNum, monthNum, 0).getDate();
-  const monthFrom = `${monthPick}-01`;
-  const monthTo = monthPick === currentYm
-    ? todayISO()
-    : toISO(new Date(yearNum, monthNum, 0));
-  const yearFrom = `${yearNum}-01-01`;
-  const yearTo = yearNum === new Date().getFullYear() ? todayISO() : `${yearNum}-12-31`;
-  const avgDays = monthPick === currentYm ? new Date().getDate() : daysInMonth;
+  const contextYear = mode === 'year' ? Number(yearPick)
+    : mode === 'day' ? Number(datePick.slice(0, 4))
+      : Number(monthPick.slice(0, 4));
+
+  const range = useMemo(() => {
+    if (mode === 'day') return { from: datePick, to: datePick };
+    if (mode === 'year') {
+      return {
+        from: `${yearPick}-01-01`,
+        to: Number(yearPick) === currentYear ? todayISO() : `${yearPick}-12-31`,
+      };
+    }
+    const [y, m] = monthPick.split('-').map(Number);
+    return {
+      from: `${monthPick}-01`,
+      to: monthPick === currentYm ? todayISO() : toISO(new Date(y, m, 0)),
+    };
+  }, [mode, datePick, monthPick, yearPick, currentYm, currentYear]);
+
+  const rangeDays = Math.max(
+    1,
+    Math.round((new Date(`${range.to}T00:00:00`) - new Date(`${range.from}T00:00:00`)) / 86400000) + 1
+  );
+  const yearFrom = `${contextYear}-01-01`;
+  const yearTo = contextYear === currentYear ? todayISO() : `${contextYear}-12-31`;
 
   useEffect(() => {
     let alive = true;
@@ -72,16 +92,16 @@ export default function Dashboard() {
     const t = todayISO();
     Promise.all([
       api(`/reports/summary?${scopeQuery}from=${t}&to=${t}`),
-      api(`/reports/summary?${scopeQuery}from=${monthFrom}&to=${monthTo}`),
+      api(`/reports/summary?${scopeQuery}from=${range.from}&to=${range.to}`),
       api(`/reports/summary?${scopeQuery}from=${yearFrom}&to=${yearTo}`),
       api(`/reports/monthly?months=12&${scopeQuery.replace(/&$/, '')}`),
-      api(`/expenses?from=${monthFrom}&to=${monthTo}&limit=8&${scopeQuery.replace(/&$/, '')}`),
+      api(`/expenses?from=${range.from}&to=${range.to}&limit=8&${scopeQuery.replace(/&$/, '')}`),
     ])
-      .then(([td, mo, yr, ml, rc]) => {
+      .then(([td, pe, yr, ml, rc]) => {
         if (!alive) return;
         setToday(td);
-        setMonth(mo);
-        setYear(yr);
+        setPeriod(pe);
+        setYearData(yr);
         setMonthly(
           ml.months.map((m) => ({
             name: monthShort(m.month),
@@ -96,9 +116,26 @@ export default function Dashboard() {
     return () => {
       alive = false;
     };
-  }, [scopeQuery, monthPick, refreshTick]);
+  }, [scopeQuery, range.from, range.to, yearFrom, yearTo, refreshTick]);
 
-  const pieData = (month.byCategory || []).map((c) => ({ name: c.category, value: Math.round(c.total) }));
+  const pieData = (period.byCategory || []).map((c) => ({ name: c.category, value: Math.round(c.total) }));
+
+  const periodName = mode === 'day'
+    ? fmtDate(datePick)
+    : mode === 'year'
+      ? `${bnDigits(contextYear)} সাল`
+      : monthLabel(monthPick);
+
+  const spendLabel = mode === 'day'
+    ? `${fmtDate(datePick)} তারিখের খরচ`
+    : mode === 'year'
+      ? `${bnDigits(contextYear)} সালের খরচ`
+      : `${monthLabel(monthPick)} মাসের খরচ`;
+
+  const last12 = monthly.reduce(
+    (acc, m) => ({ total: acc.total + m.total, count: acc.count + m.count }),
+    { total: 0, count: 0 }
+  );
 
   return (
     <div className="page">
@@ -110,15 +147,52 @@ export default function Dashboard() {
           <p className="muted">আপনার খরচের সারসংক্ষেপ এক নজরে</p>
         </div>
         <div className="dash-controls">
-          <label className="field compact">
-            <span>মাস বাছাই</span>
-            <input
-              type="month"
-              value={monthPick}
-              max={currentYm}
-              onChange={(e) => setMonthPick(e.target.value || currentYm)}
-            />
-          </label>
+          <div className="field compact">
+            <span>সময় বাছাই</span>
+            <div className="period-row">
+              <div className="seg">
+                {[['day', 'তারিখ'], ['month', 'মাস'], ['year', 'বছর']].map(([v, label]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={`seg-btn ${mode === v ? 'active' : ''}`}
+                    onClick={() => setMode(v)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {mode === 'day' && (
+                <input
+                  type="date"
+                  value={datePick}
+                  max={todayISO()}
+                  onChange={(e) => setDatePick(e.target.value || todayISO())}
+                />
+              )}
+              {mode === 'month' && (
+                <input
+                  type="month"
+                  value={monthPick}
+                  max={currentYm}
+                  onChange={(e) => setMonthPick(e.target.value || currentYm)}
+                />
+              )}
+              {mode === 'year' && (
+                <input
+                  type="number"
+                  min={2000}
+                  max={currentYear}
+                  value={yearPick}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    if (!Number.isFinite(value) || !value) return;
+                    setYearPick(String(Math.min(currentYear, Math.max(2000, Math.round(value)))));
+                  }}
+                />
+              )}
+            </div>
+          </div>
           <div className="seg">
             {[['all', 'সব'], ['family', 'পারিবারিক'], ['business', 'ব্যবসায়িক']].map(([v, label]) => (
               <button
@@ -142,39 +216,39 @@ export default function Dashboard() {
           tone="green"
         />
         <StatCard
-          label={`${monthLabel(monthPick)} মাসের খরচ`}
-          value={loading ? '—' : fmtTK(month.total)}
-          hint={`${bnDigits(month.count)} টি রেকর্ড`}
+          label={spendLabel}
+          value={loading ? '—' : fmtTK(period.total)}
+          hint={`${bnDigits(period.count)} টি রেকর্ড`}
           icon="calendar"
           tone="teal"
         />
         <StatCard
-          label={`${bnDigits(yearNum)} সালের খরচ`}
-          value={loading ? '—' : fmtTK(year.total)}
-          hint={`${bnDigits(year.count)} টি রেকর্ড`}
+          label={mode === 'year' ? 'শেষ ১২ মাসের খরচ' : `${bnDigits(contextYear)} সালের খরচ`}
+          value={loading ? '—' : fmtTK(mode === 'year' ? last12.total : yearData.total)}
+          hint={`${bnDigits(mode === 'year' ? last12.count : yearData.count)} টি রেকর্ড`}
           icon="chart"
           tone="amber"
         />
         <StatCard
-          label="মাসের গড় খরচ"
-          value={loading || !month.count ? '—' : fmtTK(month.total / avgDays)}
-          hint="প্রতিদিনের গড়"
+          label="দৈনিক গড় খরচ"
+          value={loading || !period.count ? '—' : fmtTK(period.total / rangeDays)}
+          hint={`${bnDigits(rangeDays)} দিনের গড়`}
           icon="receipt"
           tone="blue"
         />
         <StatCard
-          label={`${monthLabel(monthPick)} মাসের আয়`}
-          value={loading ? '—' : fmtTK(month.incomeTotal)}
-          hint={`${bnDigits(month.incomeCount || 0)} টি রেকর্ড`}
+          label={spendLabel.replace('খরচ', 'আয়')}
+          value={loading ? '—' : fmtTK(period.incomeTotal)}
+          hint={`${bnDigits(period.incomeCount || 0)} টি রেকর্ড`}
           icon="money"
           tone="teal"
         />
         <StatCard
           label="বর্তমান ব্যালেন্স"
-          value={loading ? '—' : fmtTK(month.balance)}
+          value={loading ? '—' : fmtTK(period.balance)}
           hint="সর্বমোট আয় − সর্বমোট খরচ"
           icon="chart"
-          tone={month.balance < 0 ? 'red' : 'green'}
+          tone={period.balance < 0 ? 'red' : 'green'}
         />
       </div>
 
@@ -198,10 +272,10 @@ export default function Dashboard() {
 
         <div className="card">
           <div className="card-head">
-            <h3>ক্যাটাগরি অনুযায়ী ({monthLabel(monthPick)})</h3>
+            <h3>ক্যাটাগরি অনুযায়ী ({periodName})</h3>
           </div>
           {pieData.length === 0 ? (
-            <div className="empty">এই মাসে কোনো খরচ নেই</div>
+            <div className="empty">এই সময়ে কোনো খরচ নেই</div>
           ) : (
             <div style={{ width: '100%', height: 280 }}>
               <ResponsiveContainer>
@@ -222,11 +296,11 @@ export default function Dashboard() {
 
       <div className="card">
         <div className="card-head">
-          <h3>{monthLabel(monthPick)} মাসের খরচ</h3>
+          <h3>{spendLabel}</h3>
           <Link className="link" to="/expenses">সব দেখুন</Link>
         </div>
         {recent.length === 0 ? (
-          <div className="empty">এই মাসে কোনো খরচ যোগ করা হয়নি</div>
+          <div className="empty">এই সময়ে কোনো খরচ যোগ করা হয়নি</div>
         ) : (
           <div className="table-wrap">
             <table>

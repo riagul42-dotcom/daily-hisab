@@ -633,6 +633,24 @@ input, select, textarea, button {
   min-width: 150px;
 }
 
+.period-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.period-row .seg-btn {
+  padding: 6px 11px;
+  font-size: 12.5px;
+}
+
+.dash-controls .period-row input {
+  width: auto;
+  flex: 1 1 130px;
+  min-width: 130px;
+}
+
 @media (max-width: 640px) {
   .dash-controls {
     width: 100%;
@@ -640,6 +658,10 @@ input, select, textarea, button {
 
   .dash-controls .field.compact {
     flex: 1;
+  }
+
+  .period-row {
+    width: 100%;
   }
 
   .dash-controls .seg {
