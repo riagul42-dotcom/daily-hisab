@@ -645,6 +645,11 @@ input, select, textarea, button {
   font-size: 12.5px;
 }
 
+.period-dash {
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .dash-controls .period-row input {
   width: auto;
   flex: 1 1 130px;

@@ -33,6 +33,8 @@ export default function Dashboard() {
   const [datePick, setDatePick] = useState(todayISO());
   const [monthPick, setMonthPick] = useState(currentYm);
   const [yearPick, setYearPick] = useState(String(currentYear));
+  const [rangeFrom, setRangeFrom] = useState(`${currentYm}-01`);
+  const [rangeTo, setRangeTo] = useState(todayISO());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [today, setToday] = useState({ total: 0, count: 0, incomeTotal: 0 });
@@ -59,10 +61,6 @@ export default function Dashboard() {
     [scope]
   );
 
-  const contextYear = mode === 'year' ? Number(yearPick)
-    : mode === 'day' ? Number(datePick.slice(0, 4))
-      : Number(monthPick.slice(0, 4));
-
   const range = useMemo(() => {
     if (mode === 'day') return { from: datePick, to: datePick };
     if (mode === 'year') {
@@ -71,12 +69,18 @@ export default function Dashboard() {
         to: Number(yearPick) === currentYear ? todayISO() : `${yearPick}-12-31`,
       };
     }
+    if (mode === 'range') {
+      const [from, to] = rangeFrom <= rangeTo ? [rangeFrom, rangeTo] : [rangeTo, rangeFrom];
+      return { from, to };
+    }
     const [y, m] = monthPick.split('-').map(Number);
     return {
       from: `${monthPick}-01`,
       to: monthPick === currentYm ? todayISO() : toISO(new Date(y, m, 0)),
     };
-  }, [mode, datePick, monthPick, yearPick, currentYm, currentYear]);
+  }, [mode, datePick, monthPick, yearPick, rangeFrom, rangeTo, currentYm, currentYear]);
+
+  const contextYear = Number(range.to.slice(0, 4));
 
   const rangeDays = Math.max(
     1,
@@ -120,17 +124,23 @@ export default function Dashboard() {
 
   const pieData = (period.byCategory || []).map((c) => ({ name: c.category, value: Math.round(c.total) }));
 
+  const rangeLabel = mode === 'range' ? `${fmtDate(range.from)} – ${fmtDate(range.to)}` : '';
+
   const periodName = mode === 'day'
     ? fmtDate(datePick)
     : mode === 'year'
       ? `${bnDigits(contextYear)} সাল`
-      : monthLabel(monthPick);
+      : mode === 'range'
+        ? rangeLabel
+        : monthLabel(monthPick);
 
   const spendLabel = mode === 'day'
     ? `${fmtDate(datePick)} তারিখের খরচ`
     : mode === 'year'
       ? `${bnDigits(contextYear)} সালের খরচ`
-      : `${monthLabel(monthPick)} মাসের খরচ`;
+      : mode === 'range'
+        ? `${rangeLabel} সময়ের খরচ`
+        : `${monthLabel(monthPick)} মাসের খরচ`;
 
   const last12 = monthly.reduce(
     (acc, m) => ({ total: acc.total + m.total, count: acc.count + m.count }),
@@ -151,7 +161,7 @@ export default function Dashboard() {
             <span>সময় বাছাই</span>
             <div className="period-row">
               <div className="seg">
-                {[['day', 'তারিখ'], ['month', 'মাস'], ['year', 'বছর']].map(([v, label]) => (
+                {[['day', 'তারিখ'], ['month', 'মাস'], ['year', 'বছর'], ['range', 'সীমা']].map(([v, label]) => (
                   <button
                     key={v}
                     type="button"
@@ -191,6 +201,27 @@ export default function Dashboard() {
                   }}
                 />
               )}
+              {mode === 'range' && (
+                <>
+                  <input
+                    type="date"
+                    aria-label="শুরুর তারিখ"
+                    title="শুরুর তারিখ"
+                    value={rangeFrom}
+                    max={todayISO()}
+                    onChange={(e) => setRangeFrom(e.target.value || `${currentYm}-01`)}
+                  />
+                  <span className="period-dash">–</span>
+                  <input
+                    type="date"
+                    aria-label="শেষের তারিখ"
+                    title="শেষের তারিখ"
+                    value={rangeTo}
+                    max={todayISO()}
+                    onChange={(e) => setRangeTo(e.target.value || todayISO())}
+                  />
+                </>
+              )}
             </div>
           </div>
           <div className="seg">
@@ -223,9 +254,9 @@ export default function Dashboard() {
           tone="teal"
         />
         <StatCard
-          label={mode === 'year' ? 'শেষ ১২ মাসের খরচ' : `${bnDigits(contextYear)} সালের খরচ`}
-          value={loading ? '—' : fmtTK(mode === 'year' ? last12.total : yearData.total)}
-          hint={`${bnDigits(mode === 'year' ? last12.count : yearData.count)} টি রেকর্ড`}
+          label={mode === 'year' || mode === 'range' ? 'শেষ ১২ মাসের খরচ' : `${bnDigits(contextYear)} সালের খরচ`}
+          value={loading ? '—' : fmtTK(mode === 'year' || mode === 'range' ? last12.total : yearData.total)}
+          hint={`${bnDigits(mode === 'year' || mode === 'range' ? last12.count : yearData.count)} টি রেকর্ড`}
           icon="chart"
           tone="amber"
         />
